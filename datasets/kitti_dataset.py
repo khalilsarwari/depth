@@ -30,21 +30,18 @@ class KITTI(Dataset):
         if self.dp.limit:
             self.samples = self.samples[:self.dp.limit]
 
-        self.rrc = A.RandomSizedCrop(height=self.dp.input_shape[0], width=self.dp.input_shape[1],
-                              min_max_height=(self.dp.input_shape[0]//2, self.dp.input_shape[0]), w2h_ratio=2, interpolation=cv2.INTER_NEAREST)
+        self.rc = A.RandomCrop(height=self.dp.input_shape[0], width=self.dp.input_shape[1])
         self.normalize_fn = A.Normalize()  # has defaults mean=(0.485, 0.456, 0.406) etc
 
         self.aug = A.Compose([
             A.HorizontalFlip(p=0.5),
-            A.RandomSizedCrop(height=self.dp.input_shape[0], width=self.dp.input_shape[1],
-                              min_max_height=(self.dp.input_shape[0]//2, self.dp.input_shape[0]), w2h_ratio=2, interpolation=cv2.INTER_NEAREST),
-            A.RandomBrightnessContrast(p=0.3),
-            A.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4,
-                          hue=0.2, always_apply=False, p=0.5),
-            A.GaussianBlur(blur_limit=(3, 7), sigma_limit=0,
-                           always_apply=False, p=0.5),
-            A.CoarseDropout(max_holes=8, max_height=8, max_width=8, min_holes=None, min_height=None, min_width=None, fill_value=0, mask_fill_value=19, always_apply=False, p=0.5),
-            A.RGBShift(r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, always_apply=False, p=0.5),
+            # A.RandomBrightnessContrast(p=0.3),
+            # A.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4,
+            #               hue=0.2, always_apply=False, p=0.5),
+            # A.GaussianBlur(blur_limit=(3, 7), sigma_limit=0,
+            #                always_apply=False, p=0.5),
+            # A.CoarseDropout(max_holes=8, max_height=8, max_width=8, min_holes=None, min_height=None, min_width=None, fill_value=0, mask_fill_value=19, always_apply=False, p=0.5),
+            # A.RGBShift(r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, always_apply=False, p=0.5),
         ])
 
         self.np_to_tensor = torch.tensor
@@ -57,20 +54,30 @@ class KITTI(Dataset):
 
     def __getitem__(self, idx):
         img_file, depth_file = self.samples[idx]
+        image = Image.open(img_file)
+        depth_gt = Image.open(depth_file)
 
-        x = np.array(Image.open(img_file), dtype=np.float32)
+        # kb crop
+        height = image.height
+        width = image.width
+        top_margin = int(height - 352)
+        left_margin = int((width - 1216) / 2)
+        depth_gt = depth_gt.crop((left_margin, top_margin, left_margin + 1216, top_margin + 352))
+        image = image.crop((left_margin, top_margin, left_margin + 1216, top_margin + 352))
 
-        y = np.array(Image.open(depth_file), dtype=np.float32) / 256.0
+        x = np.array(image, dtype=np.float32)
+
+        y = np.array(depth_gt, dtype=np.float32) / 256.0
 
         result = {}
 
-        rrc = self.rrc(image=x, mask=y)
-        result['prenorm_x'] = rrc['image']
-        result['x'] = self.np_to_tensor(self.normalize(rrc['image'])).permute(2, 0, 1).float()
-        result['y'] = self.np_to_tensor(rrc['mask']).unsqueeze(0)
+        rc = self.rc(image=x, mask=y)
+        result['prenorm_x'] = rc['image']
+        result['x'] = self.np_to_tensor(self.normalize(rc['image'])).permute(2, 0, 1).float()
+        result['y'] = self.np_to_tensor(rc['mask']).unsqueeze(0)
 
         if self.dp.is_train_dataset:
-            augmented = self.aug(image=rrc['image'], mask=rrc['mask'])
+            augmented = self.aug(image=rc['image'], mask=rc['mask'])
             result['prenorm_x_aug'] = augmented['image']
             result['y_aug'] = self.np_to_tensor(augmented['mask']).unsqueeze(0)
             result['x_aug'] = self.np_to_tensor(
