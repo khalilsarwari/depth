@@ -67,14 +67,15 @@ class KITTI(Dataset):
         rrc = self.rrc(image=x, mask=y)
         result['prenorm_x'] = rrc['image']
         result['x'] = self.np_to_tensor(self.normalize(rrc['image'])).permute(2, 0, 1).float()
-        result['y'] = self.np_to_tensor(rrc['mask'])
+        result['y'] = self.np_to_tensor(rrc['mask']).unsqueeze(0)
 
         if self.dp.is_train_dataset:
             augmented = self.aug(image=rrc['image'], mask=rrc['mask'])
             result['prenorm_x_aug'] = augmented['image']
-            result['y_aug'] = augmented['mask']
+            result['y_aug'] = self.np_to_tensor(augmented['mask']).unsqueeze(0)
             result['x_aug'] = self.np_to_tensor(
                 self.normalize(augmented['image'])).permute(2, 0, 1).float()
+
         return result
 
 if __name__=='__main__':

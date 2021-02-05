@@ -20,8 +20,8 @@ from torch.utils.data import DataLoader
 
 import losses
 
-print('comment below to not leak memory!')
-torch.autograd.set_detect_anomaly(True)
+# print('comment below to not leak memory!')
+# torch.autograd.set_detect_anomaly(True)
 
 class OriginalTrainer(BaseTrainer):
     """ Original Trainer """
@@ -60,14 +60,15 @@ class OriginalTrainer(BaseTrainer):
         stats = {}
         vis = train_batch
         with autocast(enabled=self.c.amp):
-            train_batch['y'] = train_batch['y'].cuda()
-            train_batch['x'] = train_batch['x'].cuda()
+            y = train_batch['y_aug'].cuda()
+            x = train_batch['x_aug'].cuda()
 
-            bin_edges, pred = self.model(train_batch['x'])
+            bin_edges, pred = self.model(x)
+            vis['pred_y'] = nn.functional.interpolate(pred, y.shape[-2:], mode='bilinear', align_corners=True)
 
-            mask = train_batch['y'] > self.c.model_params.min_val
-            losses['l_dense'] = self.criterion_ueff(pred, train_batch['y'], mask=mask.to(torch.bool), interpolate=True)
-            losses['l_chamfer'] = self.criterion_bins(bin_edges, train_batch['y'])
+            mask = y > self.c.model_params.min_val
+            losses['l_dense'] = self.criterion_ueff(pred, y, mask=mask.to(torch.bool), interpolate=True)
+            losses['l_chamfer'] = self.criterion_bins(bin_edges, y)
 
         losses['total_loss'] = losses['l_dense'] + self.c.w_chamfer * losses['l_chamfer']
 
@@ -184,8 +185,8 @@ class OriginalTrainer(BaseTrainer):
             train_batch = self.get_next_train_batches()
 
             if self.iteration % len(self.train_dataloader) == 0:
-                # test_losses = self.test()
-                # self.log(test_losses)
+                test_losses = self.test()
+                self.log(test_losses)
                 self.epoch += 1
 
             result = self.train(train_batch)

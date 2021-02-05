@@ -27,12 +27,11 @@ class BaseVis:
                 im_lst.append(x.astype(np.uint8))
 
             elif 'y' in k:
-                pred_heatmap_orig = np.ascontiguousarray((cmap(vis[k][0].detach().cpu().numpy()) *
+                pred_heatmap_orig = np.ascontiguousarray((cmap(vis[k][0].detach().cpu().squeeze().numpy()) *
                                                           255)[:, :, :3])
                 pred_heatmap = pred_heatmap_orig.copy()
                 cv2.putText(pred_heatmap, k, (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                 im_lst.append(pred_heatmap.astype(np.uint8))
-
             else:
                 assert False, f'{k} key needs to be dealt with!'
 
