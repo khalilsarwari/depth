@@ -1,0 +1,2 @@
+from .kitti_test_params import kitti_test_params
+from .kitti_train_params import kitti_train_params
