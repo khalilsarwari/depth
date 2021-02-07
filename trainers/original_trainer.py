@@ -170,8 +170,9 @@ class OriginalTrainer(BaseTrainer):
         self.init_model()
         self.total_iterations = self.c.epochs * \
             len(self.train_dataloader)
-        self.opt = self.c.opt(self.model.parameters(), **self.c.opt_params)
-        self.scheduler = OneCycleLR(self.opt, max_lr=self.c.max_lr, 
+        self.opt = self.c.opt([{"params": self.model.module.get_1x_lr_params(), "lr": self.c.opt_params.max_lr / 10},
+                  {"params": self.model.module.get_10x_lr_params(), "lr": self.c.opt_params.max_lr}], weight_decay = self.c.opt_params.weight_decay)
+        self.scheduler = OneCycleLR(self.opt, max_lr=self.c.opt_params.max_lr, 
                                                 total_steps=self.total_iterations,
                                                 cycle_momentum=True,
                                                 base_momentum=0.85, max_momentum=0.95, 
