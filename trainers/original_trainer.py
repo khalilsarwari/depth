@@ -137,7 +137,6 @@ class OriginalTrainer(BaseTrainer):
                 metrics.update(helpers.compute_errors(gt_depth[valid_mask], pred[valid_mask]))
                 if self.rank == 0:
                     self.pbar.set_description("Epoch {}/{} | Loss {}".format(self.epoch, self.c.epochs, val_si.get_value().item()))
-                    self.pbar.update(1)
             test_losses = metrics.get_value()
             test_losses['val_si'] = val_si.get_value()
 
@@ -170,8 +169,12 @@ class OriginalTrainer(BaseTrainer):
         self.init_model()
         self.total_iterations = self.c.epochs * \
             len(self.train_dataloader)
-        self.opt = self.c.opt([{"params": self.model.module.get_1x_lr_params(), "lr": self.c.opt_params.max_lr / 10},
-                  {"params": self.model.module.get_10x_lr_params(), "lr": self.c.opt_params.max_lr}], weight_decay = self.c.opt_params.weight_decay)
+        if torch.cuda.device_count() > 1:
+            mdl = self.model.module
+        else:
+            mdl = self.model
+        self.opt = self.c.opt([{"params": mdl.get_1x_lr_params(), "lr": self.c.opt_params.max_lr / 10},
+                  {"params": mdl.get_10x_lr_params(), "lr": self.c.opt_params.max_lr}], weight_decay = self.c.opt_params.weight_decay)
         self.scheduler = OneCycleLR(self.opt, max_lr=self.c.opt_params.max_lr, 
                                                 total_steps=self.total_iterations,
                                                 cycle_momentum=True,
@@ -203,8 +206,11 @@ class OriginalTrainer(BaseTrainer):
                 self.log(result)
             self.iteration += 1
             if self.rank == 0:
-                self.pbar.set_description("Epoch {}/{} | Loss {}".format(
-                    self.epoch, self.c.epochs, result['train/total_loss'].item()))
+                self.pbar.set_description("Epoch {}/{}, {:.1%} | Loss {}".format(
+                    self.epoch, 
+                    self.c.epochs, 
+                    (self.iteration % len(self.train_dataloader))/len(self.train_dataloader),
+                    result['train/total_loss'].item()))
                 self.pbar.update(1)
 
             del result

@@ -1,1 +1,2 @@
-from .models.unet_adaptive_bins import UnetAdaptiveBins
+from .unet_adaptive_bins import UnetAdaptiveBins
+from .custom import Custom
