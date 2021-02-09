@@ -12,7 +12,7 @@ class UpSampleBN(nn.Module):
         self._net = nn.Sequential(nn.Conv2d(skip_input, output_features, kernel_size=3, stride=1, padding=1, bias=False),
                                   nn.BatchNorm2d(output_features),
                                   nn.LeakyReLU(),
-                                  nn.Conv2d(output_features, output_features, kernel_size=3, stride=1, padding=1, bias=False),
+                                  nn.Conv2d(output_features, output_features, kernel_size=1, stride=1, padding=0, bias=False),
                                   nn.BatchNorm2d(output_features),
                                   nn.LeakyReLU())
 
@@ -81,40 +81,58 @@ class Custom(nn.Module):
         self.min_val = min_val
         self.max_val = max_val
         self.encoder = Encoder(backend)
-        self.adaptive_bins_layer = mViT(128, n_query_channels=128, patch_size=16,
-                                        dim_out=n_bins,
-                                        embedding_dim=128, norm=norm)
 
-        self.decoder = DecoderBN(num_classes=128)
+        self.decoder = DecoderBN(num_classes=64)
+        self.bins_out = nn.Sequential(nn.Conv2d(128, n_bins,kernel_size=1, stride=1, padding=0),
+                                      nn.ReLU())
         self.conv_out = nn.Sequential(nn.Conv2d(128, n_bins, kernel_size=1, stride=1, padding=0),
                                       nn.Softmax(dim=1))
 
     def forward(self, x, **kwargs):
-        unet_out = self.decoder(self.encoder(x), **kwargs)
-        bin_widths_normed, range_attention_maps = self.adaptive_bins_layer(unet_out)
-        out = self.conv_out(range_attention_maps)
+        # print(x.shape) -> torch.Size([batchsize, 3, 352, 704])
+        unet_out = self.decoder(self.encoder(x), **kwargs) # [batchsize, 64, 176, 352]
+        eps = 1e-6
+        mean = unet_out.mean(dim=[2, 3], keepdim=True)
+        std = unet_out.std(dim=[2, 3], keepdim=True)
+        # print('unet_out', unet_out.shape)
+        # print('unet_out mean', mean.shape)
+        # print('unet_out std', std.shape)
+        unet_g = (unet_out - mean)/(std + eps)
+        unet_out_g = torch.cat([unet_out, unet_g], dim=1)
+
+        y = self.bins_out(unet_out_g)
+        y = torch.relu(y)
+        y = y + eps # eps was originally .1
+        bin_widths_normed = y / y.sum(dim=1, keepdim=True) # pixelwise bin widths
+
+        out = self.conv_out(unet_out_g) # unet out g should be torch.Size([1, 128, 176, 352])
 
         # Post process
         # n, c, h, w = out.shape
         # hist = torch.sum(out.view(n, c, h * w), dim=2) / (h * w)  # not used for training
 
         bin_widths = (self.max_val - self.min_val) * bin_widths_normed  # .shape = N, dim_out
-        bin_widths = nn.functional.pad(bin_widths, (1, 0), mode='constant', value=self.min_val)
+        # print(bin_widths.shape, 'bin_widths')
+        bin_widths = nn.functional.pad(bin_widths, (0, 0, 0, 0, 0, 1), mode='constant', value=self.min_val)
+        # print(bin_widths.shape, 'bin_widths post paddingg')
         bin_edges = torch.cumsum(bin_widths, dim=1)
+        # print(bin_edges.shape, 'bin_edges')
 
         centers = 0.5 * (bin_edges[:, :-1] + bin_edges[:, 1:])
-        n, dout = centers.size()
-        centers = centers.view(n, dout, 1, 1)
+        # n, dout = centers.size()
+        # centers = centers.view(n, dout, 1, 1)
 
         pred = torch.sum(out * centers, dim=1, keepdim=True)
+        # print(pred.shape) -> torch.Size([1, 1, 176, 352])
+        avg_bin_edges = bin_edges.mean(dim=[2, 3]) # convert pixelwise bins to imagewise bins via averaging
 
-        return bin_edges, pred
+        return avg_bin_edges, pred
 
     def get_1x_lr_params(self):  # lr/10 learning rate
         return self.encoder.parameters()
 
     def get_10x_lr_params(self):  # lr learning rate
-        modules = [self.decoder, self.adaptive_bins_layer, self.conv_out]
+        modules = [self.decoder, self.bins_out, self.conv_out]
         for m in modules:
             yield from m.parameters()
 
