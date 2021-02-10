@@ -82,15 +82,15 @@ class Custom(nn.Module):
         self.max_val = max_val
         self.encoder = Encoder(backend)
 
-        self.decoder = DecoderBN(num_classes=64)
-        self.bins_out = nn.Sequential(nn.Conv2d(128, n_bins,kernel_size=1, stride=1, padding=0),
+        self.decoder = DecoderBN(num_classes=128)
+        self.bins_out = nn.Sequential(nn.Conv2d(256, n_bins,kernel_size=1, stride=1, padding=0),
                                       nn.ReLU())
-        self.conv_out = nn.Sequential(nn.Conv2d(128, n_bins, kernel_size=1, stride=1, padding=0),
+        self.conv_out = nn.Sequential(nn.Conv2d(256, n_bins, kernel_size=1, stride=1, padding=0),
                                       nn.Softmax(dim=1))
 
     def forward(self, x, **kwargs):
         # print(x.shape) -> torch.Size([batchsize, 3, 352, 704])
-        unet_out = self.decoder(self.encoder(x), **kwargs) # [batchsize, 64, 176, 352]
+        unet_out = self.decoder(self.encoder(x), **kwargs) # [batchsize, 128, 176, 352]
         eps = 1e-6
         mean = unet_out.mean(dim=[2, 3], keepdim=True)
         std = unet_out.std(dim=[2, 3], keepdim=True)
@@ -98,14 +98,14 @@ class Custom(nn.Module):
         # print('unet_out mean', mean.shape)
         # print('unet_out std', std.shape)
         unet_g = (unet_out - mean)/(std + eps)
-        unet_out_g = torch.cat([unet_out, unet_g], dim=1)
+        unet_out_g = torch.cat([unet_out, unet_g.detach()], dim=1)
 
         y = self.bins_out(unet_out_g)
         y = torch.relu(y)
         y = y + eps # eps was originally .1
         bin_widths_normed = y / y.sum(dim=1, keepdim=True) # pixelwise bin widths
 
-        out = self.conv_out(unet_out_g) # unet out g should be torch.Size([1, 128, 176, 352])
+        out = self.conv_out(unet_out_g) # unet out g should be torch.Size([1, 256, 176, 352])
 
         # Post process
         # n, c, h, w = out.shape

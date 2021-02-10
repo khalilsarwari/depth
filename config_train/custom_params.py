@@ -16,6 +16,7 @@ config.master_port = '29800'
 config.seed = 17
 config.amp = True
 config.data_workers = 8
+config.notes = 'detach normalized feature stats before concat'
 
 config.opt = AdamW
 config.opt_params.max_lr = 2 * 1e-4
