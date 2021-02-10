@@ -21,7 +21,7 @@ config.opt = AdamW
 config.opt_params.max_lr = 2 * 1e-4
 config.opt_params.weight_decay = 1e-2
 
-config.w_chamfer = 0.1
+config.w_chamfer = 0
 
 config.dataset_cls = datasets.KITTI
 config.train_dataset_params = config_datasets.kitti_train_params

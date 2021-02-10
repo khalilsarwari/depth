@@ -68,7 +68,10 @@ class OriginalTrainer(BaseTrainer):
 
             mask = y > self.c.model_params.min_val
             losses['l_dense'] = self.criterion_ueff(pred, y, mask=mask.to(torch.bool), interpolate=True)
-            losses['l_chamfer'] = self.criterion_bins(bin_edges, y)
+            if self.c.w_chamfer:
+                losses['l_chamfer'] = self.criterion_bins(bin_edges, y)
+            else:
+                losses['l_chamfer'] = 0
 
         losses['total_loss'] = losses['l_dense'] + self.c.w_chamfer * losses['l_chamfer']
 
