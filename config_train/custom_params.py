@@ -17,6 +17,7 @@ config.seed = 17
 config.amp = True
 config.data_workers = 8
 config.notes = 'detach normalized feature stats before concat'
+config.commit = '28f5196'
 
 config.opt = AdamW
 config.opt_params.max_lr = 2 * 1e-4

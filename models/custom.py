@@ -82,23 +82,24 @@ class Custom(nn.Module):
         self.max_val = max_val
         self.encoder = Encoder(backend)
 
-        self.decoder = DecoderBN(num_classes=128)
-        self.bins_out = nn.Sequential(nn.Conv2d(256, n_bins,kernel_size=1, stride=1, padding=0),
+        self.decoder = DecoderBN(num_classes=64)
+        self.bins_out = nn.Sequential(nn.Conv2d(128, n_bins,kernel_size=1, stride=1, padding=0),
                                       nn.ReLU())
-        self.conv_out = nn.Sequential(nn.Conv2d(256, n_bins, kernel_size=1, stride=1, padding=0),
+        self.conv_out = nn.Sequential(nn.Conv2d(128, n_bins, kernel_size=1, stride=1, padding=0),
                                       nn.Softmax(dim=1))
 
     def forward(self, x, **kwargs):
         # print(x.shape) -> torch.Size([batchsize, 3, 352, 704])
         unet_out = self.decoder(self.encoder(x), **kwargs) # [batchsize, 128, 176, 352]
         eps = 1e-6
-        mean = unet_out.mean(dim=[2, 3], keepdim=True)
-        std = unet_out.std(dim=[2, 3], keepdim=True)
-        # print('unet_out', unet_out.shape)
-        # print('unet_out mean', mean.shape)
-        # print('unet_out std', std.shape)
-        unet_g = (unet_out - mean)/(std + eps)
-        unet_out_g = torch.cat([unet_out, unet_g.detach()], dim=1)
+        with torch.no_grad():
+            mean = unet_out.mean(dim=[2, 3], keepdim=True)
+            std = unet_out.std(dim=[2, 3], keepdim=True)
+            # print('unet_out', unet_out.shape)
+            # print('unet_out mean', mean.shape)
+            # print('unet_out std', std.shape)
+            unet_g = (unet_out - mean)/(std + eps)
+        unet_out_g = torch.cat([unet_out, unet_g], dim=1)
 
         y = self.bins_out(unet_out_g)
         y = torch.relu(y)
