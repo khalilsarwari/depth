@@ -39,7 +39,7 @@ data/
 ```
 
 # Pretrained Models
-Pretrained models can be downloaded here: 
+Pretrained models can be downloaded [here](https://drive.google.com/drive/folders/1bJ0TH2E_Cl5HKxTum9ajKWPomBIVvd0y?usp=sharing)
 
 # Running Experiments
 
