@@ -16,8 +16,8 @@ config.master_port = '29800'
 config.seed = 17
 config.amp = True
 config.data_workers = 8
-config.notes = 'no global feature stats, no transformer'
-config.commit = '28f5196'
+config.notes = 'final custom model, with chamfer'
+config.commit = '1eb68f9'
 
 config.opt = AdamW
 config.opt_params.max_lr = 2 * 1e-4

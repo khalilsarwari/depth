@@ -89,29 +89,16 @@ class Custom(nn.Module):
                                       nn.Softmax(dim=1))
 
     def forward(self, x, **kwargs):
-        # print(x.shape) -> torch.Size([batchsize, 3, 352, 704])
         unet_out = self.decoder(self.encoder(x), **kwargs) # [batchsize, 128, 176, 352]
-        eps = 1e-6
-        # with torch.no_grad():
-        #     mean = unet_out.mean(dim=[2, 3], keepdim=True)
-        #     std = unet_out.std(dim=[2, 3], keepdim=True)
-        #     # print('unet_out', unet_out.shape)
-        #     # print('unet_out mean', mean.shape)
-        #     # print('unet_out std', std.shape)
-        #     unet_g = (unet_out - mean)/(std + eps)
-        # unet_out_g = torch.cat([unet_out, unet_g], dim=1)
         
-        unet_out_g = unet_out
-        y = self.bins_out(unet_out_g)
+        # bin weights
+        y = self.bins_out(unet_out)
         y = torch.relu(y)
         y = y + eps # eps was originally .1
         bin_widths_normed = y / y.sum(dim=1, keepdim=True) # pixelwise bin widths
 
-        out = self.conv_out(unet_out_g) # unet out g should be torch.Size([1, 256, 176, 352])
-
-        # Post process
-        # n, c, h, w = out.shape
-        # hist = torch.sum(out.view(n, c, h * w), dim=2) / (h * w)  # not used for training
+        # bin coeff
+        out = self.conv_out(unet_out) 
 
         bin_widths = (self.max_val - self.min_val) * bin_widths_normed  # .shape = N, dim_out
         # print(bin_widths.shape, 'bin_widths')
