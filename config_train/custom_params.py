@@ -17,7 +17,7 @@ config.seed = 17
 config.amp = True
 config.data_workers = 8
 config.notes = 'final custom model, with chamfer'
-config.commit = '0563c30'
+config.commit = '7982dd5'
 
 config.opt = AdamW
 config.opt_params.max_lr = 2 * 1e-4

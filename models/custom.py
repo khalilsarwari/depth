@@ -90,7 +90,7 @@ class Custom(nn.Module):
 
     def forward(self, x, **kwargs):
         unet_out = self.decoder(self.encoder(x), **kwargs) # [batchsize, 128, 176, 352]
-        
+        eps = 1e-6
         # bin weights
         y = self.bins_out(unet_out)
         y = torch.relu(y)
