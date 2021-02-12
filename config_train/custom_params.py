@@ -17,13 +17,13 @@ config.seed = 17
 config.amp = True
 config.data_workers = 8
 config.notes = 'final custom model, with chamfer'
-config.commit = '1eb68f9'
+config.commit = '0563c30'
 
 config.opt = AdamW
 config.opt_params.max_lr = 2 * 1e-4
 config.opt_params.weight_decay = 1e-2
 
-config.w_chamfer = 0
+config.w_chamfer = 0.1
 
 config.dataset_cls = datasets.KITTI
 config.train_dataset_params = config_datasets.kitti_train_params
