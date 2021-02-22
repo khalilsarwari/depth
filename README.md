@@ -35,7 +35,19 @@ data/
           segment-10017090168044687777_6380_000_6400_000_with_camera_labels.tfrecord
         validation/
           ...
- 
+    nyu/
+        train.txt
+        val.txt
+        train/
+            bathroom/
+                rgb_00043.jpg
+                sync_depth_00043.png
+                ...
+        test/
+            bathroom/
+                rgb_00045.jpg
+                sync_depth_00045.png
+                ...
 ```
 
 # Pretrained Models
