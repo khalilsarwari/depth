@@ -39,6 +39,7 @@
 #include "../includes/json_parser.h"
 #include "../includes/fd_socket.h"
 #include "../includes/batch_cmd_parser.h"
+#include <ros/ros.h>
 /*****************************************************************************
 **                      	Global data
 *****************************************************************************/
@@ -76,7 +77,7 @@ void individual_sensor_test(int fd)
 
 int main(int argc, char **argv)
 {
-
+	ros::init(argc, argv, "image_publisher");
 	{
 		Timer timer; /** measure time spent in this scope and print out once out*/
 		int v4l2_dev; /** global variable, file descriptor for camera device */

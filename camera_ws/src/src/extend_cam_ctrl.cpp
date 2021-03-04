@@ -858,13 +858,16 @@ get_frame_rates(struct device *dev)
 //void streaming_loop(struct device *dev)
 void streaming_loop(struct device *dev, int socket)
 {
-
+	ros::NodeHandle nh;
+  	image_transport::ImageTransport it(nh);
+  	image_transport::Publisher pub = it.advertise("camera/image", 1);
 	send_fd(socket, dev->fd);
 	cv::namedWindow(window_name, cv::WINDOW_NORMAL);
 	image_count = 0;
 	set_restart_flag(0);
 	set_loop(1);
-
+	cv::Mat frame;
+	sensor_msgs::ImagePtr msg;
 	while (*loop)
 	{
 		// after *restart again. it seems new opencv window couldn't
@@ -891,8 +894,14 @@ void streaming_loop(struct device *dev, int socket)
 			start_camera(dev);
 			set_loop(1);
 		}
-		get_a_frame(dev);
-	}
+		frame = get_a_frame(dev);
+		if(!frame.empty()) {
+			msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame).toImageMsg();
+			pub.publish(msg);
+		} else {
+			std::cout << "Empty!";
+		}
+    }
 	int v4l2_dev = dev->fd;
 	unmap_variables();
 	stop_Camera(dev); 			/// stream off
@@ -909,9 +918,9 @@ void streaming_loop(struct device *dev, int socket)
  * args: 
  * 		struct device *dev - every infomation for camera
  */
-void get_a_frame(struct device *dev)
+cv::Mat get_a_frame(struct device *dev)
 {
-
+	cv::Mat frame;
 	for (size_t i = 0; i < dev->nbufs; i++)
 	{
 		/// time measured in OpenCV for fps
@@ -924,19 +933,19 @@ void get_a_frame(struct device *dev)
 		if (ioctl(dev->fd, VIDIOC_DQBUF, &queuebuffer) < 0)
 		{
 			perror("VIDIOC_DQBUF");
-			return;
+			exit(1);
 		}
 
-		decode_process_a_frame(dev, dev->buffers[i].start, cur_time);
+		frame = decode_process_a_frame(dev, dev->buffers[i].start, cur_time);
 
 		if (ioctl(dev->fd, VIDIOC_QBUF, &queuebuffer) < 0)
 		{
 			perror("VIDIOC_QBUF");
-			return;
+			exit(1);
 		}
 	}
 
-	return;
+	return frame;
 }
 
 
@@ -1554,7 +1563,7 @@ static void group_gpu_image_proc(
 
  * 
  */
-void decode_process_a_frame(
+cv::Mat decode_process_a_frame(
 	struct device *dev,
 	const void *p,
 	double *cur_time)
@@ -1688,10 +1697,11 @@ void decode_process_a_frame(
 	if (share_img.rows > 0 && share_img.cols > 0) {
 		cv::imshow(window_name, share_img);
 		// publish to topic
-		
+
 	}
 
 	switch_on_keys();
+	return share_img;
 }
 
 

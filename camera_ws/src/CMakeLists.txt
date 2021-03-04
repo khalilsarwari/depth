@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 project (leopard_tools CXX)
-find_package(catkin REQUIRED COMPONENTS roscpp)
+find_package(catkin REQUIRED COMPONENTS roscpp image_transport cv_bridge)
 find_package (OpenMP REQUIRED)
 find_package (OpenMP REQUIRED)
 find_package (OpenCV REQUIRED)

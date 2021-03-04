@@ -46,6 +46,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <cv.h>
 /****************************************************************************
 **                      	Global data 
 *****************************************************************************/
@@ -136,7 +137,7 @@ get_frame_rates(struct device *dev);
 
 void streaming_loop(struct device *dev, int socket);
 
-void get_a_frame(struct device *dev);
+cv::Mat get_a_frame(struct device *dev);
 
 void soft_ae_enable(int enable);
 double calc_mean(struct device *dev, const void *p);
@@ -188,7 +189,7 @@ void add_sharpness_val(int sharpness_val_from_gui);
 void add_edge_thres_val(int edge_low_thres_val_from_gui);
 void switch_on_keys();
 
-void decode_process_a_frame(
+cv::Mat decode_process_a_frame(
    struct device *dev, 
    const void *p,
    double *cur_time);
