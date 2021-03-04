@@ -136,7 +136,7 @@ get_frame_rates(struct device *dev);
 
 void streaming_loop(struct device *dev, int socket);
 
-void get_a_frame(struct device *dev, int fd);
+void get_a_frame(struct device *dev);
 
 void soft_ae_enable(int enable);
 double calc_mean(struct device *dev, const void *p);
@@ -191,8 +191,7 @@ void switch_on_keys();
 void decode_process_a_frame(
    struct device *dev, 
    const void *p,
-   double *cur_time, 
-   int fd);
+   double *cur_time);
 
 int video_alloc_buffers(struct device *dev);
 int video_free_buffers(struct device *dev);

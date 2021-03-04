@@ -19,7 +19,7 @@ docker run -it \
     --volume="$XAUTH:$XAUTH" \
     --gpus all \
     --name live_depth\
-    -v $(pwd):/root \
+    -v $(pwd):/home/user \
     --device=/dev/video0 \
-    nvidia_ros_image \
-    bash
+    nvidia_ros_image
+

@@ -50,6 +50,10 @@
 #include "../includes/cam_property.h"
 #include "../includes/batch_cmd_parser.h"
 #include <omp.h> /**for openmp */
+#include <ros/ros.h>
+#include <image_transport/image_transport.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <cv_bridge/cv_bridge.h>
 
 /*****************************************************************************
 **                      	Global variables 
@@ -861,15 +865,6 @@ void streaming_loop(struct device *dev, int socket)
 	set_restart_flag(0);
 	set_loop(1);
 
-    int fd;
-    char * myfifo = "/tmp/myfifo";
-
-    // create the FIFO (named pipe)
-    // mkfifo(myfifo, 0666);
-
-    // write "Hi" to the FIFO
-    fd = open(myfifo, O_WRONLY);
-
 	while (*loop)
 	{
 		// after *restart again. it seems new opencv window couldn't
@@ -896,11 +891,8 @@ void streaming_loop(struct device *dev, int socket)
 			start_camera(dev);
 			set_loop(1);
 		}
-		get_a_frame(dev, fd);
+		get_a_frame(dev);
 	}
-    close(fd);
-    // remove the FIFO
-    unlink(myfifo);
 	int v4l2_dev = dev->fd;
 	unmap_variables();
 	stop_Camera(dev); 			/// stream off
@@ -916,9 +908,8 @@ void streaming_loop(struct device *dev, int socket)
  *
  * args: 
  * 		struct device *dev - every infomation for camera
- *      int fd - named pipe
  */
-void get_a_frame(struct device *dev, int fd)
+void get_a_frame(struct device *dev)
 {
 
 	for (size_t i = 0; i < dev->nbufs; i++)
@@ -936,7 +927,7 @@ void get_a_frame(struct device *dev, int fd)
 			return;
 		}
 
-		decode_process_a_frame(dev, dev->buffers[i].start, cur_time, fd);
+		decode_process_a_frame(dev, dev->buffers[i].start, cur_time);
 
 		if (ioctl(dev->fd, VIDIOC_QBUF, &queuebuffer) < 0)
 		{
@@ -1566,8 +1557,7 @@ static void group_gpu_image_proc(
 void decode_process_a_frame(
 	struct device *dev,
 	const void *p,
-	double *cur_time,
-	int fd)
+	double *cur_time)
 {
 	int height = dev->height;
 	int width = dev->width;
@@ -1697,11 +1687,8 @@ void decode_process_a_frame(
 		display_current_mat_stream_info(share_img, cur_time);
 	if (share_img.rows > 0 && share_img.cols > 0) {
 		cv::imshow(window_name, share_img);
-	    // write(fd, share_img.data, sizeof(share_img.data));
-	    int szz = share_img.total() * share_img.elemSize();
-	    fprintf(stderr, "%d\n", szz);
-	    write(fd, share_img.data, szz);
-	    // close(fd);
+		// publish to topic
+		
 	}
 
 	switch_on_keys();
