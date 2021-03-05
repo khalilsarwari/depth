@@ -34,6 +34,7 @@ gstreamer1.0-tools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstre
 ros-melodic-desktop-full python-rosinstall python-rosinstall-generator python-wstool build-essential python-rosdep \
 ros-melodic-socketcan-bridge \
 python3-catkin-pkg-modules \
+python-catkin-tools \
 ros-melodic-geodesy && \
 apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -50,15 +51,15 @@ RUN addgroup --gid 1000 user
 RUN adduser --disabled-password --gecos '' --uid 1000 --gid 1000 user
 RUN usermod -a -G video user
 COPY . /home/user
-RUN chown -R user /home/user/*
 
 # build camera tools
-RUN /bin/bash -c "source /opt/ros/melodic/setup.bash && cd /home/user/camera_ws && catkin_make clean && catkin_make -DPYTHON_EXECUTABLE=/usr/bin/python3"
+RUN /bin/bash -c "source /opt/ros/melodic/setup.bash && cd /home/user/camera_ws && catkin clean && catkin build"
 
 # build lidar tools
-RUN /bin/bash -c "source /opt/ros/melodic/setup.bash && cd /home/user/lidar_ws && catkin_make clean && catkin_make"
+RUN /bin/bash -c "source /opt/ros/melodic/setup.bash && cd /home/user/lidar_ws && catkin clean -y && catkin build"
 
-# Set user
+RUN chown -R user /home/user/*
+# # Set user
 USER user
 
 WORKDIR /home/user

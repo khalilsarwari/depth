@@ -834,11 +834,12 @@ void debayer_awb_a_frame(
 			cv::COLOR_BayerBG2BGR + bayer_flg);
 	
 #endif
-		if (awb_flg)
-		{	
-			//Timer timer;
-			apply_white_balance(opencvImage);
-		}
+	apply_white_balance(opencvImage);
+		// if (awb_flg)
+		// {	
+		// 	//Timer timer;
+		// 	apply_white_balance(opencvImage);
+		// }
 	}
 	/** mono output */
 	if (bayer_flg == CV_MONO_FLG && opencvImage.type() == CV_8UC3)

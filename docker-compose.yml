@@ -1,14 +1,11 @@
 version: '2'
 
-networks:
-  ros:
-    driver: bridge
-
 services:
   main:
     build:
       context: .
     user: user
+    privileged: true
     image: nvidia_ros_image
     volumes: 
       - ".:/home/user"
@@ -17,14 +14,14 @@ services:
       - DISPLAY=$DISPLAY
       - QT_X11_NO_MITSHM=1
     command: >
-      /bin/bash -c "/opt/ros/melodic/env.sh roscore & /opt/ros/melodic/env.sh rosrun rviz rviz"
-    networks:
-      - ros
+      /bin/bash -c "/opt/ros/melodic/env.sh roscore & /opt/ros/melodic/env.sh rosrun rviz rviz -d default.rviz"
+    network_mode: host
 
   camera:
     build:
       context: .
     user: user
+    privileged: true
     image: nvidia_ros_image
     volumes: 
       - "./camera_ws:/home/user/camera_ws"
@@ -32,12 +29,11 @@ services:
     depends_on:
       - main
     environment:
-      - ROS_MASTER_URI=http://main:11311
-      - ROS_HOSTNAME=camera"
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
       - DISPLAY=$DISPLAY
       - QT_X11_NO_MITSHM=1
-    networks:
-      - ros
+    network_mode: host
     devices:
       - "/dev/video0:/dev/video0"
     command: >
@@ -50,21 +46,20 @@ services:
       context: .
     image: nvidia_ros_image
     user: user
+    privileged: true
     volumes: 
       - "./lidar_ws:/home/user/lidar_ws"
       - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
     depends_on:
       - main
     environment:
-      - ROS_MASTER_URI=http://main:11311
-      - ROS_HOSTNAME=lidar
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
       - DISPLAY=$DISPLAY
       - QT_X11_NO_MITSHM=1
-      - ROS_LOG_DIR=/home/user/lidar_ws/logs
-    networks:
-      - ros
+    network_mode: host 
     command: >
       /bin/bash -c "source /opt/ros/melodic/setup.bash &&
           cd /home/user/lidar_ws &&
           source ./devel/setup.sh &&
-          roslaunch livox_ros_driver livox_lidar_rviz.launch --wait"
+          roslaunch livox_ros_driver livox_lidar.launch --wait"
