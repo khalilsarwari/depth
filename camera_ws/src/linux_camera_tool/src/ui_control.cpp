@@ -872,11 +872,11 @@ void init_grid1_widgets()
     hbox_bayer      = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
     hbox_datatype   = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
 
-    radio_raw10 = gtk_radio_button_new(NULL);
-    radio_raw12 = gtk_radio_button_new_with_group(radio_raw10);
-    radio_yuyv  = gtk_radio_button_new_with_group(radio_raw10);
-    radio_raw8  = gtk_radio_button_new_with_group(radio_raw10);
-    radio_mjpeg  = gtk_radio_button_new_with_group(radio_raw10);
+    radio_raw12 = gtk_radio_button_new(NULL);
+    radio_raw10 = gtk_radio_button_new_with_group(radio_raw12);
+    radio_yuyv  = gtk_radio_button_new_with_group(radio_raw12);
+    radio_raw8  = gtk_radio_button_new_with_group(radio_raw12);
+    radio_mjpeg  = gtk_radio_button_new_with_group(radio_raw12);
 
     radio_bg    = gtk_radio_button_new(NULL);
     radio_gb    = gtk_radio_button_new_with_group(radio_bg);
@@ -1200,14 +1200,14 @@ void init_grid1_def_elements ()
          .parent = NULL, 
          .label_str = "0"},
 
-        {.widget = radio_raw10, 
-         .wid_type = GTK_WIDGET_TYPE_RADIO_BUTTON, 
-         .parent = hbox_datatype, 
-         .label_str = "RAW10"},
         {.widget = radio_raw12, 
          .wid_type = GTK_WIDGET_TYPE_RADIO_BUTTON, 
          .parent = hbox_datatype, 
          .label_str = "RAW12"},
+        {.widget = radio_raw10, 
+         .wid_type = GTK_WIDGET_TYPE_RADIO_BUTTON, 
+         .parent = hbox_datatype, 
+         .label_str = "RAW10"},
         {.widget = radio_yuyv,  
          .wid_type = GTK_WIDGET_TYPE_RADIO_BUTTON, 
          .parent = hbox_datatype, 
@@ -1751,11 +1751,11 @@ void iterate_element_cb(element_callback *callbacks, size_t members)
 void list_all_grid1_element_callbacks()
 {
     static element_callback callbacks[] = {
-        {.widget = radio_raw10,       
+        {.widget = radio_raw12,       
          .signal = "toggled", 
          .handler = G_CALLBACK(radio_datatype), 
          .data = (gpointer)"1"},
-        {.widget = radio_raw12,       
+        {.widget = radio_raw10,       
          .signal = "toggled", 
          .handler = G_CALLBACK(radio_datatype), 
          .data = (gpointer)"2"},

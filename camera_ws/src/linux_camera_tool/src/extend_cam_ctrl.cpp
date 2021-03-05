@@ -310,9 +310,9 @@ inline int set_shift(int bpp)
 void change_datatype(void *datatype)
 {
 	if (strcmp((char *)datatype, "1") == 0)
-		*bpp = RAW10_FLG;
-	if (strcmp((char *)datatype, "2") == 0)
 		*bpp = RAW12_FLG;
+	if (strcmp((char *)datatype, "2") == 0)
+		*bpp = RAW10_FLG;
 	if (strcmp((char *)datatype, "3") == 0)
 		*bpp = YUYV_FLG;
 	if (strcmp((char *)datatype, "4") == 0)
