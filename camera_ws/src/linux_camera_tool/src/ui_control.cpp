@@ -1224,11 +1224,11 @@ void init_grid1_def_elements ()
         {.widget = radio_bg,   
          .wid_type = GTK_WIDGET_TYPE_RADIO_BUTTON, 
          .parent = hbox_bayer, 
-         .label_str = "BGGR"},
+         .label_str = "GBRG"},
         {.widget = radio_gb,   
          .wid_type = GTK_WIDGET_TYPE_RADIO_BUTTON, 
          .parent = hbox_bayer, 
-         .label_str = "GBRG"},
+         .label_str = "BGGR"},
         {.widget = radio_rg,   
          .wid_type = GTK_WIDGET_TYPE_RADIO_BUTTON, 
          .parent = hbox_bayer, 
@@ -2025,7 +2025,7 @@ void init_sensitivity()
     }
 
     gtk_toggle_button_set_active(
-       GTK_TOGGLE_BUTTON(check_button_stream_info), TRUE);  
+       GTK_TOGGLE_BUTTON(check_button_stream_info), FALSE);  
     gtk_range_set_value(GTK_RANGE(hscale_beta), 0);
     gtk_widget_set_sensitive(hscale_edge_low_thres,0);    
 

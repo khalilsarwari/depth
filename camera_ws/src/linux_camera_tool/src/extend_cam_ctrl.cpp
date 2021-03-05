@@ -337,9 +337,9 @@ void change_datatype(void *datatype)
 void change_bayerpattern(void *bayer)
 {
 	if (strcmp((char *)bayer, "1") == 0)
-		*bayer_flag = CV_BayerBG2BGR_FLG;
-	if (strcmp((char *)bayer, "2") == 0)
 		*bayer_flag = CV_BayerGB2BGR_FLG;
+	if (strcmp((char *)bayer, "2") == 0)
+		*bayer_flag = CV_BayerBG2BGR_FLG;
 	if (strcmp((char *)bayer, "3") == 0)
 		*bayer_flag = CV_BayerRG2BGR_FLG;
 	if (strcmp((char *)bayer, "4") == 0)
@@ -531,8 +531,8 @@ void initialize_shared_memory_var()
 		*bpp = YUYV_FLG;
 	else
 		*bpp = set_bpp(get_li_datatype());
-	*bayer_flag = CV_BayerBG2BGR_FLG;
-	*display_info_ena = TRUE;
+	*bayer_flag = CV_BayerGB2BGR_FLG;
+	*display_info_ena = FALSE;
 	*alpha = 1;
 	*beta = 0;
 	*sharpness = 1;
@@ -1696,8 +1696,6 @@ cv::Mat decode_process_a_frame(
 		display_current_mat_stream_info(share_img, cur_time);
 	if (share_img.rows > 0 && share_img.cols > 0) {
 		cv::imshow(window_name, share_img);
-		// publish to topic
-
 	}
 
 	switch_on_keys();

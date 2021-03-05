@@ -50,19 +50,14 @@ ENV NVIDIA_DRIVER_CAPABILITIES \
 RUN addgroup --gid 1000 user
 RUN adduser --disabled-password --gecos '' --uid 1000 --gid 1000 user
 RUN usermod -a -G video user
-COPY . /home/user
+RUN mkdir -p /home/user
+WORKDIR /home/user
+RUN chown -R user /home/user
 
-# build camera tools
-RUN /bin/bash -c "source /opt/ros/melodic/setup.bash && cd /home/user/camera_ws && catkin clean && catkin build"
-
-# build lidar tools
-RUN /bin/bash -c "source /opt/ros/melodic/setup.bash && cd /home/user/lidar_ws && catkin clean -y && catkin build"
-
-RUN chown -R user /home/user/*
-# # Set user
+# Set user
 USER user
 
-WORKDIR /home/user
+
 
 
 
