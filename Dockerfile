@@ -39,8 +39,6 @@ apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Configure ROS
 RUN rosdep init && rosdep update 
-RUN echo "source /opt/ros/melodic/setup.bash" >> /etc/bash.bashrc
-RUN echo "export ROSLAUNCH_SSH_UNKNOWN=1" >> /etc/bash.bashrc
 
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES \
@@ -48,14 +46,22 @@ ENV NVIDIA_VISIBLE_DEVICES \
 ENV NVIDIA_DRIVER_CAPABILITIES \
     ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
-# Set user
-
-ARG USER_ID
-ARG GROUP_ID
-
-RUN addgroup --gid $GROUP_ID user
-RUN adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID user
+RUN addgroup --gid 1000 user
+RUN adduser --disabled-password --gecos '' --uid 1000 --gid 1000 user
 RUN usermod -a -G video user
+COPY . /home/user
+RUN chown -R user /home/user/*
+
+# build camera tools
+RUN /bin/bash -c "source /opt/ros/melodic/setup.bash && cd /home/user/camera_ws && catkin_make clean && catkin_make -DPYTHON_EXECUTABLE=/usr/bin/python3"
+
+# build lidar tools
+RUN /bin/bash -c "source /opt/ros/melodic/setup.bash && cd /home/user/lidar_ws && catkin_make clean && catkin_make"
+
+# Set user
 USER user
 
 WORKDIR /home/user
+
+
+

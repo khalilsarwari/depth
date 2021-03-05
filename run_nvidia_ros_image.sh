@@ -22,4 +22,3 @@ docker run -it \
     -v $(pwd):/home/user \
     --device=/dev/video0 \
     nvidia_ros_image
-
