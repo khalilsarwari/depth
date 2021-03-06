@@ -16,6 +16,7 @@ build-essential \
 cmake \
 pkg-config \
 clang  \
+dbus-x11 \
 libomp-dev \       
 v4l-utils libv4l-dev \               
 libudev-dev \                   

@@ -1,11 +1,11 @@
 {
     "_comment":"this is the json config file used in \"Config File -> Load json\"\nput your camera info here to use the functionality of group write registers and capture image\nthis line is ignored",
-    "deviceName": "IMX477",
-    "subAddress": "0x30",
+    "deviceName": "MT9M021C",
+    "subAddress": "0x20",
     "regAddressWidth": 16,
     "regValueWidth":16,
     "regPair": {
-        "0x3012": "0x200"
+        "0x3012": "0x0020"
     },
   
     "captureRAWNumber": 3,

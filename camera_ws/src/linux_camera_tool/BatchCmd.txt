@@ -29,15 +29,30 @@
 # InterFrameDelay 10 # delay 10 ms after each frame is captured 
 # Capture 3 CapturedImage # capture 3 frames, the file name is CapturedImage_1.bmp, CapturedImage_2.bmp, and CapturedImage_3.bmp 
 # Display yes # enable Display
-SubAddress 0x30
-RegAddrWidth 16
-RegAddress 0x3060
-Write 0x0040
-Read 2
-RegAddress 0x3012
-Write 0x00F0
-Read 2
-RegAddress 0x305e
-Write 0x300
-Read 2
-Capture 3
+#SubAddress 0x30
+#SubAddress 0x10
+#RegAddrWidth 16
+#RegAddress 0x3060
+#Write 0x0040
+#Read 2
+#RegAddress 0x3012
+#Write 0x00F0
+#Read 2
+#RegAddress 0x305e
+#Write 0x300
+#Read 2
+#Capture 3
+
+
+subAddress 0x20 # device 8-bit I2C sub address is 0x6C 
+regAddrWidth 16 # 16-bit address 
+regValueWidth 16,
+regAddress 0x3012 # register address 0x3012 
+write 0x00 0x10 # write 0x0010 to register 0x3012 
+Capture 1
+
+#SubAddress 0x20 # device 8-bit I2C sub address is 0x6C 
+#RegAddrWidth 16 # 16-bit address 
+#RegAddress 0x3012 # register address 0x3012 
+#ead 2 # read 2 bytes 
+
