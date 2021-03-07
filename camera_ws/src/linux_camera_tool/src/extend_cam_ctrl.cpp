@@ -862,7 +862,7 @@ void streaming_loop(struct device *dev, int socket)
   	image_transport::ImageTransport it(nh);
   	image_transport::Publisher pub = it.advertise("camera/image", 1);
 	send_fd(socket, dev->fd);
-	cv::namedWindow(window_name, cv::WINDOW_NORMAL);
+	// cv::namedWindow(window_name, cv::WINDOW_NORMAL);
 	image_count = 0;
 	set_restart_flag(0);
 	set_loop(1);
@@ -881,7 +881,7 @@ void streaming_loop(struct device *dev, int socket)
 			set_restart_flag(0);		/// reset restart flag
 			stop_Camera(dev);			/// stream off
 			video_free_buffers(dev);	/// free buffer
-			cv::destroyWindow(window_name);
+			// cv::destroyWindow(window_name);
 
 			std::vector<std::string> elem =
 				split(resolutions[*res_index], 'x');
@@ -1580,7 +1580,7 @@ void switch_on_keys()
 	case 'q':
 	case 'Q':
 	case _ESC_KEY_ASCII:
-		cv::destroyWindow(window_name);
+		// cv::destroyWindow(window_name);
 		set_loop(0);
 		break;
 	default:
@@ -1756,13 +1756,13 @@ cv::Mat decode_process_a_frame(
 	}
 	/** if image larger than 720p by any dimension, resize the window */
 	//if (*resize_window_ena)
-	if (width >= CROPPED_WIDTH || height >= CROPPED_HEIGHT)
-		cv::resizeWindow(window_name, CROPPED_WIDTH, CROPPED_HEIGHT);
+	// if (width >= CROPPED_WIDTH || height >= CROPPED_HEIGHT)
+	// 	cv::resizeWindow(window_name, CROPPED_WIDTH, CROPPED_HEIGHT);
 	if (*display_info_ena)
 		display_current_mat_stream_info(share_img, cur_time);
-	if (share_img.rows > 0 && share_img.cols > 0) {
-		cv::imshow(window_name, share_img);
-	}
+	// if (share_img.rows > 0 && share_img.cols > 0) {
+	// 	cv::imshow(window_name, share_img);
+	// }
 
 	switch_on_keys();
 	return share_img;
