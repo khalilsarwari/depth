@@ -868,6 +868,9 @@ void streaming_loop(struct device *dev, int socket)
 	set_loop(1);
 	cv::Mat frame;
 	sensor_msgs::ImagePtr msg;
+  
+    unsigned char cnt = 0;
+
 	while (*loop)
 	{
 		// after *restart again. it seems new opencv window couldn't
@@ -894,6 +897,69 @@ void streaming_loop(struct device *dev, int socket)
 			start_camera(dev);
 			set_loop(1);
 		}
+
+        // create a 4 bit rollover counter
+        if (cnt == 16) cnt = 0;
+		else           ++cnt;
+
+		switch(cnt) {
+			case 0  :
+			sensor_reg_write(dev->fd, 0x3002, 0x0078); // y-start (centered to 720)
+			break; 
+			case 1  :
+			sensor_reg_write(dev->fd, 0x3006, 0x0347); // y-end   (centered to 720)
+			break;	  
+			case 2  :
+			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			break;
+			case 3  :
+			sensor_reg_write(dev->fd, 0x3008, 0x04FF);  // y-end
+			break;
+			case 4  :
+			sensor_reg_write(dev->fd, 0x300A, 0x044c);// Set appropriate frame_length_lines
+			break;
+			case 5  :
+			sensor_reg_write(dev->fd, 0x300C, 0x0672);// Set appropriate line_length_pixels DO NOT CHANGE THIS
+			break;
+			case 6  :
+			//sensor_reg_write(dev->fd, 0x3064, 0x1982);// Turn-on metadata;
+			sensor_reg_write(dev->fd, 0x3064, 0x1802);// Turn-off metadata;
+			break;	
+			case 7  :
+			sensor_reg_write(dev->fd, 0x3010, 0x0000);// Enable Imager I2C writes 
+			break;
+			case 8  :
+			sensor_reg_write(dev->fd, 0x301A, 0x10D4);// Make all registers rd/wr
+			break; 
+			case 9  :
+			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			break;	  
+			case 10  :
+			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			break;
+			case 11  :
+			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			break;
+			case 12  :
+			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			break;
+			case 13  :
+			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			break;
+			case 14  :
+			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			break;	
+			case 15  :
+			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			break;	
+
+			default :
+				sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+		}
+
+
+
+
 		frame = get_a_frame(dev);
 		if(!frame.empty()) {
 			msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame).toImageMsg();

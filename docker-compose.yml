@@ -41,7 +41,7 @@ services:
                     cd /home/user/camera_ws && catkin clean -y && 
                     catkin build &&
                     source ./devel/setup.bash &&
-                    ./devel/lib/leopard_tools/leopard_cam"
+                    ./devel/lib/leopard_tools/leopard_cam -s 1280x720 -t 15"
 
   lidar:
     build:

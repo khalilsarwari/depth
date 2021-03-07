@@ -2474,14 +2474,13 @@ void ctrl_gui_main(int socket)
 //void ctrl_gui_main()
 {
     v4l2_dev = recv_fd(socket);
-    fprintf(stderr, "WRITING TO SENSOR REG! :D\n");
-    //sensor_reg_write(v4l2_dev, regAddr, regVal);
-    sensor_reg_write(v4l2_dev, 0x3012, 0x00cd);
-
-
-
-    fprintf(stderr, "WROTE TO SENSOR REG!!!!!!!!\n");
     gui_init();
     css_setup();
     gui_run();
+
+
+
+
 }
+
+
