@@ -916,29 +916,30 @@ void streaming_loop(struct device *dev, int socket)
 			sensor_reg_write(dev->fd, 0x3008, 0x04FF);  // y-end
 			break;
 			case 4  :
-			sensor_reg_write(dev->fd, 0x300A, 0x044c);// Set appropriate frame_length_lines
+			//sensor_reg_write(dev->fd, 0x300A, 0x044c);// Set appropriate frame_length_lines for 40fps
+			sensor_reg_write(dev->fd, 0x300A, 0x08ca);// Set appropriate frame_length_lines for 20fps
 			break;
 			case 5  :
-			sensor_reg_write(dev->fd, 0x300C, 0x0672);// Set appropriate line_length_pixels DO NOT CHANGE THIS
+			sensor_reg_write(dev->fd, 0x300C, 0x0672);// Set appropriate line_length_pixels ONSEMI OPTIMIZED: DO NOT CHANGE THIS
 			break;
 			case 6  :
 			//sensor_reg_write(dev->fd, 0x3064, 0x1982);// Turn-on metadata;
 			sensor_reg_write(dev->fd, 0x3064, 0x1802);// Turn-off metadata;
 			break;	
 			case 7  :
-			sensor_reg_write(dev->fd, 0x3010, 0x0000);// Enable Imager I2C writes 
+			sensor_reg_write(dev->fd, 0x3010, 0x0000);// Enable all I2C writes to Imager
 			break;
 			case 8  :
-			sensor_reg_write(dev->fd, 0x301A, 0x10D4);// Make all registers rd/wr
+			sensor_reg_write(dev->fd, 0x301A, 0x10D4);// Make all Imager registers rd/wr
 			break; 
 			case 9  :
-			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			sensor_reg_write(dev->fd, 0x3012, 0x000b); // Integ-time for California 2:00pm Sun
 			break;	  
 			case 10  :
-			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			sensor_reg_write(dev->fd, 0x305a, 0x0027); // WB for California 2:00pm sun: Digital gain red 0x305a/32
 			break;
 			case 11  :
-			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			sensor_reg_write(dev->fd, 0x3058, 0x002C); // WB for California 2:00pm sun: Digital gain red 0x3058/32
 			break;
 			case 12  :
 			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
