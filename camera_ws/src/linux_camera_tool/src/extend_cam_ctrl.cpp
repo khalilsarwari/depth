@@ -858,9 +858,9 @@ get_frame_rates(struct device *dev)
 //void streaming_loop(struct device *dev)
 void streaming_loop(struct device *dev, int socket)
 {
+	ros::Time::init();
 	ros::NodeHandle nh;
-  	image_transport::ImageTransport it(nh);
-  	image_transport::Publisher pub = it.advertise("camera/image", 1);
+  	ros::Publisher pub = nh.advertise<sensor_msgs::Image>("camera/image", 16);
 	send_fd(socket, dev->fd);
 	// cv::namedWindow(window_name, cv::WINDOW_NORMAL);
 	image_count = 0;
@@ -934,6 +934,7 @@ void streaming_loop(struct device *dev, int socket)
 			break; 
 			case 9  :
 			sensor_reg_write(dev->fd, 0x3012, 0x000b); // Integ-time for California 2:00pm Sun
+			//sensor_reg_write(dev->fd, 0x3012, 0x02ee); // Integ-time for nighttime
 			break;	  
 			case 10  :
 			sensor_reg_write(dev->fd, 0x305a, 0x0027); // WB for California 2:00pm sun: Digital gain red 0x305a/32
@@ -942,7 +943,7 @@ void streaming_loop(struct device *dev, int socket)
 			sensor_reg_write(dev->fd, 0x3058, 0x002C); // WB for California 2:00pm sun: Digital gain red 0x3058/32
 			break;
 			case 12  :
-			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			// sensor_reg_write(dev->fd, 0x30b0, 0x0010); // global analog up gain for nighttime
 			break;
 			case 13  :
 			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
@@ -962,8 +963,10 @@ void streaming_loop(struct device *dev, int socket)
 
 
 		frame = get_a_frame(dev);
+		std_msgs::Header mymessage = std_msgs::Header();
+		mymessage.stamp = ros::Time::now();
 		if(!frame.empty()) {
-			msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame).toImageMsg();
+			msg = cv_bridge::CvImage(mymessage, "bgr8", frame).toImageMsg();
 			pub.publish(msg);
 		} else {
 			std::cout << "Empty!";
@@ -1002,9 +1005,7 @@ cv::Mat get_a_frame(struct device *dev)
 			perror("VIDIOC_DQBUF");
 			exit(1);
 		}
-
 		frame = decode_process_a_frame(dev, dev->buffers[i].start, cur_time);
-
 		if (ioctl(dev->fd, VIDIOC_QBUF, &queuebuffer) < 0)
 		{
 			perror("VIDIOC_QBUF");
@@ -1642,7 +1643,7 @@ cv::Mat decode_process_a_frame(
 #ifdef HAVE_OPENCV_CUDA_SUPPORT
 	cv::cuda::GpuMat gpu_img;
 #endif
-
+	
 	if (*soft_ae_flag)
 		apply_soft_ae(dev, p);
 	if (*save_raw)

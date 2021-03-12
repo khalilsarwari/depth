@@ -685,7 +685,7 @@ void sensor_reg_write(int fd, int regAddr, int regVal)
 	write_to_UVC_extension(fd, LI_XU_SENSOR_REG_RW,
 						   LI_XU_SENSOR_REG_RW_SIZE, buf14);
 
-	printf("V4L2_CORE: Write Sensor REG[0x%x]: 0x%x\r\n", regAddr, regVal);
+	// printf("V4L2_CORE: Write Sensor REG[0x%x]: 0x%x\r\n", regAddr, regVal);
 }
 
 /** 

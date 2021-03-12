@@ -163,7 +163,7 @@
  * exposure, gain since mmap will allocate buffers to cover more 
  * frames.
  */
-#define V4L_BUFFERS_DEFAULT	    (2) 
+#define V4L_BUFFERS_DEFAULT	    (1) // nbufs to 1 to keep processing fps == camera fps
 #define V4L_BUFFERS_MAX	        (32)
 
 
