@@ -41,7 +41,7 @@ services:
                     cd /home/user/camera_ws && catkin clean -y && 
                     catkin build &&
                     source ./devel/setup.bash &&
-                    ./devel/lib/leopard_tools/leopard_cam -s 1280x720"
+                    ./devel/lib/leopard_tools/leopard_cam -s 1280x960"
 
   lidar:
     build:
@@ -54,6 +54,7 @@ services:
       - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
     depends_on:
       - main
+      - camera
     environment:
       - ROS_MASTER_URI=http://localhost:11311
       - ROS_HOSTNAME=localhost

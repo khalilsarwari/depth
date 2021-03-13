@@ -174,5 +174,5 @@
 typedef enum
 {
    CROPPED_WIDTH = 1280,
-   CROPPED_HEIGHT = 720
+   CROPPED_HEIGHT = 960
 } cropped_resolution;

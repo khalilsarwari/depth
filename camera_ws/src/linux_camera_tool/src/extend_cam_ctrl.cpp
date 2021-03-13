@@ -902,18 +902,23 @@ void streaming_loop(struct device *dev, int socket)
         if (cnt == 16) cnt = 0;
 		else           ++cnt;
 
+
 		switch(cnt) {
 			case 0  :
-			sensor_reg_write(dev->fd, 0x3002, 0x0078); // y-start (centered to 720)
+			//sensor_reg_write(dev->fd, 0x3002, 0x0078); // y-start (centered to 720)
+			sensor_reg_write(dev->fd, 0x3010, 0x0000);// Enable all I2C writes to Image
 			break; 
 			case 1  :
-			sensor_reg_write(dev->fd, 0x3006, 0x0347); // y-end   (centered to 720)
+			//sensor_reg_write(dev->fd, 0x3006, 0x0347); // y-end   (centered to 720)
+			sensor_reg_write(dev->fd, 0x301A, 0x10D4);// Make all Imager registers rd/wr 
 			break;	  
 			case 2  :
-			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			//sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			sensor_reg_write(dev->fd, 0x3002, 0x0004); // Extend start-y from 0x0000 to 0x0004 since metadata and metastats are going to be added 
 			break;
 			case 3  :
-			sensor_reg_write(dev->fd, 0x3008, 0x04FF);  // y-end
+			//sensor_reg_write(dev->fd, 0x3008, 0x04FF);  // y-end
+			sensor_reg_write(dev->fd, 0x3064, 0x1982);// Turn-on metadata;
 			break;
 			case 4  :
 			//sensor_reg_write(dev->fd, 0x300A, 0x044c);// Set appropriate frame_length_lines for 40fps
@@ -924,35 +929,34 @@ void streaming_loop(struct device *dev, int socket)
 			break;
 			case 6  :
 			//sensor_reg_write(dev->fd, 0x3064, 0x1982);// Turn-on metadata;
-			sensor_reg_write(dev->fd, 0x3064, 0x1802);// Turn-off metadata;
+			//sensor_reg_write(dev->fd, 0x3064, 0x1802);// Turn-off metadata;
 			break;	
 			case 7  :
-			sensor_reg_write(dev->fd, 0x3010, 0x0000);// Enable all I2C writes to Imager
 			break;
 			case 8  :
-			sensor_reg_write(dev->fd, 0x301A, 0x10D4);// Make all Imager registers rd/wr
+			
 			break; 
 			case 9  :
-			sensor_reg_write(dev->fd, 0x3012, 0x000b); // Integ-time for California 2:00pm Sun
+			//sensor_reg_write(dev->fd, 0x3012, 0x000b); // Integ-time for California 2:00pm Sun
 			//sensor_reg_write(dev->fd, 0x3012, 0x02ee); // Integ-time for nighttime
 			break;	  
 			case 10  :
-			sensor_reg_write(dev->fd, 0x305a, 0x0027); // WB for California 2:00pm sun: Digital gain red 0x305a/32
+			//sensor_reg_write(dev->fd, 0x305a, 0x0027); // WB for California 2:00pm sun: Digital gain red 0x305a/32
 			break;
 			case 11  :
-			sensor_reg_write(dev->fd, 0x3058, 0x002C); // WB for California 2:00pm sun: Digital gain red 0x3058/32
+			//sensor_reg_write(dev->fd, 0x3058, 0x002C); // WB for California 2:00pm sun: Digital gain red 0x3058/32
 			break;
 			case 12  :
 			// sensor_reg_write(dev->fd, 0x30b0, 0x0010); // global analog up gain for nighttime
 			break;
 			case 13  :
-			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			//sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
 			break;
 			case 14  :
-			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			//sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
 			break;	
 			case 15  :
-			sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+			//sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
 			break;	
 
 			default :
@@ -962,7 +966,18 @@ void streaming_loop(struct device *dev, int socket)
 
 
 
+
+
+
+
+
+
+
+
+
+
 		frame = get_a_frame(dev);
+
 		std_msgs::Header mymessage = std_msgs::Header();
 		mymessage.stamp = ros::Time::now();
 		if(!frame.empty()) {
@@ -1758,14 +1773,17 @@ cv::Mat decode_process_a_frame(
 	}
 	/** if image larger than 720p by any dimension, resize the window */
 	//if (*resize_window_ena)
-	// if (width >= CROPPED_WIDTH || height >= CROPPED_HEIGHT)
-	// 	cv::resizeWindow(window_name, CROPPED_WIDTH, CROPPED_HEIGHT);
-	if (*display_info_ena)
-		display_current_mat_stream_info(share_img, cur_time);
+	//  if (width >= CROPPED_WIDTH || height >= CROPPED_HEIGHT)
+	//  	cv::resizeWindow(window_name, CROPPED_WIDTH, CROPPED_HEIGHT);
+
+
+
+	// if (*display_info_ena)
+	// 	display_current_mat_stream_info(share_img, cur_time);
 	// if (share_img.rows > 0 && share_img.cols > 0) {
 	// 	cv::imshow(window_name, share_img);
 	// }
-
+	
 	switch_on_keys();
 	return share_img;
 }
