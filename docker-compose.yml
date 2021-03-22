@@ -38,9 +38,8 @@ services:
       - "/dev/video0:/dev/video0"
     command: >
       /bin/bash -c "source /opt/ros/melodic/setup.bash && 
-                    cd /home/user/camera_ws && catkin clean -y && 
-                    catkin build &&
-                    source ./devel/setup.bash &&
+                    cd /home/user/camera_ws && 
+                    catkin clean -y && catkin build && source ./devel/setup.bash &&
                     ./devel/lib/leopard_tools/leopard_cam -s 1280x960"
 
   lidar:
@@ -63,7 +62,7 @@ services:
     network_mode: host 
     command: >
       /bin/bash -c "source /opt/ros/melodic/setup.bash && 
-          cd /home/user/lidar_ws && catkin clean -y && 
+          cd /home/user/lidar_ws && 
           catkin build &&
           source ./devel/setup.bash &&
           roslaunch livox_ros_driver livox_lidar.launch publish_freq:=20 xfer_format:=2 --wait"

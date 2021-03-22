@@ -1395,7 +1395,7 @@ else  {
   update_number = 15;
 }
   
-printf("update_number: %f\n", (float) (update_number)  );
+//printf("update_number: %f\n", (float) (update_number)  );
 
 
 
@@ -1431,8 +1431,8 @@ moving_avg_blue    = compute_moving_avg (ae_mean_b);
 
 double ratio_c1_div_r = ((double) moving_avg_clear_r) / ((double) moving_avg_red);
 double ratio_c1_div_b = ((double) moving_avg_clear_r) / ((double) moving_avg_blue);
-printf("ratio_c1_div_r: %f\n", (float) (ratio_c1_div_r)  );
-printf("ratio_c1_div_b: %f\n", (float) (ratio_c1_div_b)  );
+//printf("ratio_c1_div_r: %f\n", (float) (ratio_c1_div_r)  );
+//printf("ratio_c1_div_b: %f\n", (float) (ratio_c1_div_b)  );
 
 
 // Define when a cfg-reg update is needed

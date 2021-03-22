@@ -53,6 +53,15 @@ data/
 # Pretrained Models
 Pretrained models can be downloaded [here](https://drive.google.com/drive/folders/1bJ0TH2E_Cl5HKxTum9ajKWPomBIVvd0y?usp=sharing)
 
+# Collecting Data
+
+Sometimes the camera does not initialize correctly, in which case you need to run the following command to reset the usb device:
+```
+cc usbreset.c -o usbreset && chmod a+x usbreset && sudo ./usbreset /dev/bus/usb/002/003
+```
+
+Use `lsusb` to find the appropriate bus/device number
+
 # Running Experiments
 
 Training commands are of the form:
