@@ -119,6 +119,45 @@ extern void free_device_vars();
 /******************************************************************************
 **                           Function definition
 *****************************************************************************/
+double compute_moving_avg (double* ae_mean) {
+  // 1st: Determine max_imagemean_index
+  double max_imagemean = ae_mean[0];
+  int    max_imagemean_index = 0;
+
+  for (int cnt = 1; cnt < 16; cnt = cnt + 1) {
+    if (ae_mean[cnt] >= max_imagemean) {
+      max_imagemean = ae_mean[cnt];
+      max_imagemean_index = cnt;
+    }
+  }
+
+
+  // 2nd: Determine min_imagemean_index
+  double min_imagemean = ae_mean[0];
+  int    min_imagemean_index = 0;
+
+  for (int cnt = 1; cnt < 16; cnt = cnt + 1) {
+    if (ae_mean[cnt] <= min_imagemean) {
+      min_imagemean = ae_mean[cnt];
+      min_imagemean_index = cnt;
+    }
+  }
+
+
+  double aggregate_14 = (double) 0.0;
+  // Compute the sum (without the two outliers)
+  for (int cnt = 0; cnt < 16; cnt = cnt + 1) {
+    if ((cnt != max_imagemean_index) || (cnt != min_imagemean_index)) aggregate_14 = aggregate_14 + ae_mean[cnt];
+  }
+
+
+  double moving_avg = aggregate_14 /(double)14.0;
+
+
+  return moving_avg;
+}
+
+
 
 
 void set_restart_flag(int flag)
@@ -898,73 +937,6 @@ void streaming_loop(struct device *dev, int socket)
 			set_loop(1);
 		}
 
-        // create a 4 bit rollover counter
-        if (cnt == 16) cnt = 0;
-		else           ++cnt;
-
-
-		switch(cnt) {
-			case 0  :
-			//sensor_reg_write(dev->fd, 0x3002, 0x0078); // y-start (centered to 720)
-			sensor_reg_write(dev->fd, 0x3010, 0x0000);// Enable all I2C writes to Image
-			break; 
-			case 1  :
-			//sensor_reg_write(dev->fd, 0x3006, 0x0347); // y-end   (centered to 720)
-			sensor_reg_write(dev->fd, 0x301A, 0x10D4);// Make all Imager registers rd/wr 
-			break;	  
-			case 2  :
-			//sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
-			sensor_reg_write(dev->fd, 0x3002, 0x0004); // Extend start-y from 0x0000 to 0x0004 since metadata and metastats are going to be added 
-			break;
-			case 3  :
-			//sensor_reg_write(dev->fd, 0x3008, 0x04FF);  // y-end
-			sensor_reg_write(dev->fd, 0x3064, 0x1982);// Turn-on metadata;
-			break;
-			case 4  :
-			//sensor_reg_write(dev->fd, 0x300A, 0x044c);// Set appropriate frame_length_lines for 40fps
-			sensor_reg_write(dev->fd, 0x300A, 0x08ca);// Set appropriate frame_length_lines for 20fps
-			break;
-			case 5  :
-			sensor_reg_write(dev->fd, 0x300C, 0x0672);// Set appropriate line_length_pixels ONSEMI OPTIMIZED: DO NOT CHANGE THIS
-			break;
-			case 6  :
-			//sensor_reg_write(dev->fd, 0x3064, 0x1982);// Turn-on metadata;
-			//sensor_reg_write(dev->fd, 0x3064, 0x1802);// Turn-off metadata;
-			break;	
-			case 7  :
-			break;
-			case 8  :
-			
-			break; 
-			case 9  :
-			//sensor_reg_write(dev->fd, 0x3012, 0x000b); // Integ-time for California 2:00pm Sun
-			//sensor_reg_write(dev->fd, 0x3012, 0x02ee); // Integ-time for nighttime
-			break;	  
-			case 10  :
-			//sensor_reg_write(dev->fd, 0x305a, 0x0027); // WB for California 2:00pm sun: Digital gain red 0x305a/32
-			break;
-			case 11  :
-			//sensor_reg_write(dev->fd, 0x3058, 0x002C); // WB for California 2:00pm sun: Digital gain red 0x3058/32
-			break;
-			case 12  :
-			// sensor_reg_write(dev->fd, 0x30b0, 0x0010); // global analog up gain for nighttime
-			break;
-			case 13  :
-			//sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
-			break;
-			case 14  :
-			//sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
-			break;	
-			case 15  :
-			//sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
-			break;	
-
-			default :
-				sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
-		}
-
-
-
 
 
 
@@ -977,6 +949,794 @@ void streaming_loop(struct device *dev, int socket)
 
 
 		frame = get_a_frame(dev);
+
+		
+		unsigned char row0[1280*2];
+		unsigned char row1[1280*2];
+		unsigned char row958[1280*2];
+		unsigned char row959[1280*2];
+    
+                unsigned char* uchar_ptr;
+
+		// reset uchar_ptr
+		uchar_ptr = (unsigned char *) dev->buffers[0].start;
+
+		
+		for (int row_cnt = 0; row_cnt < 960; ++row_cnt) {
+		   for (int col_cnt = 0; col_cnt < 1280*2; ++col_cnt) {
+			   if ((row_cnt == 0)) row0[col_cnt]   =  (unsigned short) (*uchar_ptr);
+			   if ((row_cnt == 1)) row1[col_cnt]   =  (unsigned short) (*uchar_ptr);		
+			   if ((row_cnt == 958)) row958[col_cnt] =  (unsigned short) (*uchar_ptr);
+			   if ((row_cnt == 959)) row959[col_cnt] =  (unsigned short) (*uchar_ptr);	
+
+			++uchar_ptr;
+		   }
+		}
+
+
+
+
+unsigned short frame_count = (int) ((256*row0[6+(2*(0x303A - 0x3000))]) + row0[  6+2+(2*(0x303A - 0x3000))]);
+//printf("\nframe_count 0x%04x\n", (int) frame_count);
+
+unsigned short integ_time = (int) ((256*row0[6+(2*(0x3012 - 0x3000))]) + row0[  6+2+(2*(0x3012 - 0x3000))]);
+//printf("integ_time 0x%04x\n", (int) integ_time);
+
+unsigned short global_analog_up_gain = (int) ((256*row0[6+(2*(0x30B0 - 0x3000))]) + row0[  6+2+(2*(0x30B0 - 0x3000))]);
+//printf("global_analog_up_gain 0x%04x\n", (int) global_analog_up_gain);
+
+
+// Digital gains for every channel
+unsigned short Cr_digital_gain = (int) ((256*row0[6+(2*(0x3056 - 0x3000))]) + row0[  6+2+(2*(0x3056 - 0x3000))]);
+//printf("Cr_digital_gain 0x%04x\n", (int) Cr_digital_gain);
+
+unsigned short Cb_digital_gain = (int) ((256*row0[6+(2*(0x305c - 0x3000))]) + row0[  6+2+(2*(0x305c - 0x3000))]);
+//printf("Cb_digital_gain 0x%04x\n", (int) Cb_digital_gain);
+
+unsigned short red_digital_gain = (int) ((256*row0[6+(2*(0x305a - 0x3000))]) + row0[  6+2+(2*(0x305a - 0x3000))]);
+//printf("red_digital_gain 0x%04x\n", (int) red_digital_gain);
+
+unsigned short blue_digital_gain = (int) ((256*row0[6+(2*(0x3058 - 0x3000))]) + row0[  6+2+(2*(0x3058 - 0x3000))]);
+//printf("blue_digital_gain 0x%04x\n", (int) blue_digital_gain);
+
+
+
+
+
+#define		FRAME_WIDTH		      1280
+#define		FRAME_HEIGHT	              960
+#define		FRAME_HEIGHT_WITHOUT_META     956
+#define	        EMBD_DATA_ROW_COUNT	      2
+#define		EMBD_STATS_ROW_COUNT          2
+#define         AEGC_AWB_START_DLY_IN_FRM_CNT 8
+#define         HISTOGRAM_PERCENTILE          0.60
+#define         LENS_EV_CONSTANT              250.0f 
+
+
+ 
+  double half_frame_mean;
+  int row, col;
+  unsigned short *word_ptr;
+
+  double CLEARrChannelPixelMean;
+  double REDChannelPixelMean;
+  double BLUEChannelPixelMean;
+
+  double histogram[32];
+
+  // initialize all bins to 0
+  for (int bin = 0; bin < 32; ++bin) {
+    histogram[bin] = (double) 0.0;
+  }
+
+
+  for (row = ((FRAME_HEIGHT_WITHOUT_META/2) + EMBD_DATA_ROW_COUNT); row < (FRAME_HEIGHT - EMBD_STATS_ROW_COUNT); row = row + 4) {
+
+    uchar_ptr = (unsigned char *) dev->buffers[0].start;
+    uchar_ptr = uchar_ptr  + (FRAME_WIDTH*row) + 0;
+
+    for (col = 0; col < FRAME_WIDTH; col = col + 4) {
+      if (  ((*uchar_ptr) >= 0  )  && ((*uchar_ptr) < 8  )      )   ++histogram[0 ];
+      if (  ((*uchar_ptr) >= 8  )  && ((*uchar_ptr) < 16 )      )   ++histogram[1 ];
+      if (  ((*uchar_ptr) >= 16 )  && ((*uchar_ptr) < 24 )      )   ++histogram[2 ];
+      if (  ((*uchar_ptr) >= 24 )  && ((*uchar_ptr) < 32 )      )   ++histogram[3 ];
+      if (  ((*uchar_ptr) >= 32 )  && ((*uchar_ptr) < 40 )      )   ++histogram[4 ];
+      if (  ((*uchar_ptr) >= 40 )  && ((*uchar_ptr) < 48 )      )   ++histogram[5 ];
+      if (  ((*uchar_ptr) >= 48 )  && ((*uchar_ptr) < 56 )      )   ++histogram[6 ];
+      if (  ((*uchar_ptr) >= 56 )  && ((*uchar_ptr) < 64 )      )   ++histogram[7 ];
+      if (  ((*uchar_ptr) >= 64 )  && ((*uchar_ptr) < 72 )      )   ++histogram[8 ];
+      if (  ((*uchar_ptr) >= 72 )  && ((*uchar_ptr) < 80 )      )   ++histogram[9 ];
+      if (  ((*uchar_ptr) >= 80 )  && ((*uchar_ptr) < 88 )      )   ++histogram[10];
+      if (  ((*uchar_ptr) >= 88 )  && ((*uchar_ptr) < 96 )      )   ++histogram[11];
+      if (  ((*uchar_ptr) >= 96 )  && ((*uchar_ptr) < 104)      )   ++histogram[12];
+      if (  ((*uchar_ptr) >= 104)  && ((*uchar_ptr) < 112)      )   ++histogram[13];
+      if (  ((*uchar_ptr) >= 112)  && ((*uchar_ptr) < 120)      )   ++histogram[14];
+      if (  ((*uchar_ptr) >= 120)  && ((*uchar_ptr) < 128)      )   ++histogram[15];
+      if (  ((*uchar_ptr) >= 128)  && ((*uchar_ptr) < 136)      )   ++histogram[16];
+      if (  ((*uchar_ptr) >= 136)  && ((*uchar_ptr) < 144)      )   ++histogram[17];
+      if (  ((*uchar_ptr) >= 144)  && ((*uchar_ptr) < 152)      )   ++histogram[18];
+      if (  ((*uchar_ptr) >= 152)  && ((*uchar_ptr) < 160)      )   ++histogram[19];
+      if (  ((*uchar_ptr) >= 160)  && ((*uchar_ptr) < 168)      )   ++histogram[20];
+      if (  ((*uchar_ptr) >= 168)  && ((*uchar_ptr) < 176)      )   ++histogram[21];
+      if (  ((*uchar_ptr) >= 176)  && ((*uchar_ptr) < 184)      )   ++histogram[22];
+      if (  ((*uchar_ptr) >= 184)  && ((*uchar_ptr) < 192)      )   ++histogram[23];
+      if (  ((*uchar_ptr) >= 192)  && ((*uchar_ptr) < 200)      )   ++histogram[24];
+      if (  ((*uchar_ptr) >= 200)  && ((*uchar_ptr) < 208)      )   ++histogram[25];
+      if (  ((*uchar_ptr) >= 208)  && ((*uchar_ptr) < 216)      )   ++histogram[26];
+      if (  ((*uchar_ptr) >= 216)  && ((*uchar_ptr) < 224)      )   ++histogram[27];
+      if (  ((*uchar_ptr) >= 224)  && ((*uchar_ptr) < 232)      )   ++histogram[28];
+      if (  ((*uchar_ptr) >= 232)  && ((*uchar_ptr) < 240)      )   ++histogram[29];
+      if (  ((*uchar_ptr) >= 240)  && ((*uchar_ptr) < 248)      )   ++histogram[30];
+      if (  ((*uchar_ptr) >= 248)  && ((*uchar_ptr) < 256)      )   ++histogram[31];
+      uchar_ptr = uchar_ptr + 4;
+ 
+    }
+  }
+
+  //printf("histogram[0 ]:%d\n", (int) histogram[0 ]  );
+  //printf("histogram[1 ]:%d\n", (int) histogram[1 ]  );
+  //printf("histogram[2 ]:%d\n", (int) histogram[2 ]  );
+  //printf("histogram[3 ]:%d\n", (int) histogram[3 ]  );
+  //printf("histogram[4 ]:%d\n", (int) histogram[4 ]  );
+  //printf("histogram[5 ]:%d\n", (int) histogram[5 ]  );
+  //printf("histogram[6 ]:%d\n", (int) histogram[6 ]  );
+  //printf("histogram[7 ]:%d\n", (int) histogram[7 ]  );
+  //printf("histogram[8 ]:%d\n", (int) histogram[8 ]  );
+  //printf("histogram[9 ]:%d\n", (int) histogram[9 ]  );
+  //printf("histogram[10]:%d\n", (int) histogram[10]  );
+  //printf("histogram[11]:%d\n", (int) histogram[11]  );
+  //printf("histogram[12]:%d\n", (int) histogram[12]  );
+  //printf("histogram[13]:%d\n", (int) histogram[13]  );
+  //printf("histogram[14]:%d\n", (int) histogram[14]  );
+  //printf("histogram[15]:%d\n", (int) histogram[15]  );
+  //printf("histogram[16]:%d\n", (int) histogram[16]  );
+  //printf("histogram[17]:%d\n", (int) histogram[17]  );
+  //printf("histogram[18]:%d\n", (int) histogram[18]  );
+  //printf("histogram[19]:%d\n", (int) histogram[19]  );
+  //printf("histogram[20]:%d\n", (int) histogram[20]  );
+  //printf("histogram[21]:%d\n", (int) histogram[21]  );
+  //printf("histogram[22]:%d\n", (int) histogram[22]  );
+  //printf("histogram[23]:%d\n", (int) histogram[23]  );
+  //printf("histogram[24]:%d\n", (int) histogram[24]  );
+  //printf("histogram[25]:%d\n", (int) histogram[25]  );
+  //printf("histogram[26]:%d\n", (int) histogram[26]  );
+  //printf("histogram[27]:%d\n", (int) histogram[27]  );
+  //printf("histogram[28]:%d\n", (int) histogram[28]  );
+  //printf("histogram[29]:%d\n", (int) histogram[29]  );
+  //printf("histogram[30]:%d\n", (int) histogram[30]  );
+  //printf("histogram[31]:%d\n", (int) histogram[31]  );
+
+ 
+
+  // INCOMPLETE: BL value of 18 may need to be removed from the mean to fully linearize output
+  // Cr
+  int Cr_half_frame_pixel_cnt = 0;
+  half_frame_mean = (double) 0.0;
+
+  for (row = ((FRAME_HEIGHT_WITHOUT_META/2) + EMBD_DATA_ROW_COUNT); row < (FRAME_HEIGHT - EMBD_STATS_ROW_COUNT); row = row + 16) {
+
+    uchar_ptr = (unsigned char *) dev->buffers[0].start;
+    uchar_ptr = uchar_ptr  + (FRAME_WIDTH*row) + 0;
+
+    for (col = 0; col < FRAME_WIDTH; col = col + 16) {
+
+      half_frame_mean = half_frame_mean + (*uchar_ptr);
+      Cr_half_frame_pixel_cnt++;
+     
+      uchar_ptr = uchar_ptr + 16;
+    }
+
+  }
+  CLEARrChannelPixelMean = (int) (half_frame_mean/((double) Cr_half_frame_pixel_cnt));
+  //printf("CLEARrChannelPixelMean:%d\n", (int) (CLEARrChannelPixelMean)  );
+
+
+  // red
+  int red_half_frame_pixel_cnt = 0;
+  half_frame_mean = (double) 0.0;
+
+  for (row = ((FRAME_HEIGHT_WITHOUT_META/2) + EMBD_DATA_ROW_COUNT); row < (FRAME_HEIGHT - EMBD_STATS_ROW_COUNT); row = row + 16) {
+
+    // reset uchar_ptr
+    uchar_ptr = (unsigned char *) dev->buffers[0].start;
+    uchar_ptr = uchar_ptr  + (FRAME_WIDTH*row) + 1;
+
+    for (col = 1; col < FRAME_WIDTH; col = col + 16) {
+        half_frame_mean = half_frame_mean + (*uchar_ptr);
+        red_half_frame_pixel_cnt++;
+      uchar_ptr = uchar_ptr + 16;
+    }
+
+  }
+  REDChannelPixelMean = (int) (half_frame_mean/((double) red_half_frame_pixel_cnt));
+  //printf("REDChannelPixelMean:%d\n", (int) (REDChannelPixelMean)  );
+
+
+
+  // Blue
+  int blue_half_frame_pixel_cnt = 0;
+  half_frame_mean = (double) 0.0;
+
+  for (row = ((FRAME_HEIGHT_WITHOUT_META/2) + EMBD_DATA_ROW_COUNT + 1); row < (FRAME_HEIGHT - EMBD_STATS_ROW_COUNT); row = row + 16) {
+
+    // reset uchar_ptr
+    uchar_ptr = (unsigned char *) dev->buffers[0].start;
+    uchar_ptr = uchar_ptr  + (FRAME_WIDTH*row) + 0;
+
+    for (col = 0; col < FRAME_WIDTH; col = col + 16) {
+        half_frame_mean = half_frame_mean + (*uchar_ptr);
+        blue_half_frame_pixel_cnt++;
+      uchar_ptr = uchar_ptr + 16;
+    }
+
+  }
+  BLUEChannelPixelMean = (int) (half_frame_mean/((double) blue_half_frame_pixel_cnt));
+  //printf("BLUEChannelPixelMean:%d\n", (int) (BLUEChannelPixelMean)  );
+
+  // Cb
+  //int Cb_half_frame_pixel_cnt = 0;
+  //half_frame_mean = (double) 0.0;
+  //
+  //for (row = ((FRAME_HEIGHT_WITHOUT_META/2) + EMBD_DATA_ROW_COUNT); row < (FRAME_HEIGHT - EMBD_STATS_ROW_COUNT); row = row + 16) {
+  //
+  //  // reset uchar_ptr
+  //  uchar_ptr = (unsigned char *) dev->buffers[0].start;
+  //  uchar_ptr = uchar_ptr  + (FRAME_WIDTH*row) + 0;
+  //
+  //  for (col = 0; col < FRAME_WIDTH; col = col + 16) {
+  //      half_frame_mean = half_frame_mean + (*uchar_ptr);
+  //      Cb_half_frame_pixel_cnt++;
+  //    uchar_ptr = uchar_ptr + 16;
+  //  }
+  //
+  //}
+  //CLEARbChannelPixelMean = (int) (half_frame_mean/((double) Cb_half_frame_pixel_cnt));
+  //printf("CLEARbChannelPixelMean: %d\n", (int) (CLEARbChannelPixelMean)  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+float EV_CLEARr;
+
+
+// Static variables
+static unsigned short integ_rows_wr = 496;
+static int    integ_rows_rd = 496;
+
+static float  ana_gain_wr = 1.0f;
+static float  ana_gain_rd = 1.0f;
+
+static float clear_r_digital_gain_rd = 1.0f; 
+static float red_digital_gain_rd = 1.0f; 
+static float blue_digital_gain_rd = 1.0f; 
+
+
+  
+static int    previous_frame_count = 1<<16;// Delibrate mismatch (in all possible cases)
+static int    update_number = 0;
+
+static int    red_gain_update_number = 0;
+static int    blue_gain_update_number = 0;
+
+static double moving_avg_clear_r = 0.0f; 
+static double moving_avg_red     = 0.0f; 
+static double moving_avg_blue    = 0.0f; 
+static double moving_avg_clear_b = 0.0f; 
+
+
+static unsigned short cfgreg[10];
+static unsigned short previous_cfgreg[10];
+
+
+
+
+
+
+// Compute integ_rows_rd (in rows)
+integ_rows_rd = (int) integ_time;
+//printf("integ_rows_rd: %d\n", (int) (integ_rows_rd)  );
+
+// Compute clear_r_digital_gain_rd
+clear_r_digital_gain_rd = ((float) Cr_digital_gain) / ((float) 32);
+//printf("clear_r_digital_gain_rd: %f\n", (float) (clear_r_digital_gain_rd)  );
+
+// Compute red_digital_gain_rd
+red_digital_gain_rd = ((float) red_digital_gain) / ((float) 32);
+//printf("red_digital_gain_rd: %f\n", (float) (red_digital_gain_rd)  );
+
+// Compute blue_digital_gain_rd
+blue_digital_gain_rd = ((float) blue_digital_gain) / ((float) 32);
+//printf("blue_digital_gain_rd: %f\n", (float) (blue_digital_gain_rd)  );
+
+
+
+
+  
+// Compute AnalogGain
+ switch (global_analog_up_gain & 0x0030) {
+  case 0x0000:
+	ana_gain_rd = 1.0f;
+	break;
+
+  case 0x0010:
+	ana_gain_rd = 2.0f;
+	break;
+	
+  case 0x0020:
+	ana_gain_rd = 4.0f;
+	break;
+
+  case 0x0030:
+	ana_gain_rd = 6.0f;
+	break;
+	
+  default:
+        ana_gain_rd = 1.0f;
+}
+
+//printf("ana_gain_rd: %f\n", (float) (ana_gain_rd)  );
+ 
+
+
+
+ 
+
+
+
+
+// Compute histogram_bin_cnt_total_all
+// Test all 256 bins have been correctly parsed by adding them up and ensuring they aggregate to (1280*960/(2 * 16)) = 38400;
+int hist_bin_cnt_cache    = 0;
+int histogram1_bin_cnt_total_all = 0;
+for (int cnt_all = 0; cnt_all < 32; cnt_all=cnt_all+1) {
+  hist_bin_cnt_cache = hist_bin_cnt_cache + histogram[cnt_all];
+}
+int histogram_bin_cnt_total_all = hist_bin_cnt_cache;
+//printf("histogram_bin_cnt_total_all: %d\n", (int) (histogram_bin_cnt_total_all)  );
+
+
+
+ 
+ 
+// Compute current_exp_bin that represents the 60th percentile
+int current_exp_bin;
+int histogram_bin_cnt_total = 0;
+for (int hist_cnt=32-1; hist_cnt >= 0; hist_cnt=hist_cnt-1) {
+  histogram_bin_cnt_total = histogram_bin_cnt_total + histogram[hist_cnt];
+  if (histogram_bin_cnt_total > (histogram_bin_cnt_total_all*(1.0f-(float)HISTOGRAM_PERCENTILE))) {
+    current_exp_bin = hist_cnt;
+    break;
+  }
+}
+//printf("current_exp_bin: %d\n", (int) (current_exp_bin)  );
+
+
+
+
+
+
+
+ 
+
+// Compute EV for CLEAR_r
+// EV_CLEARr varies between 1 (pitch-dark)  and 170 (saturated)
+EV_CLEARr = (float)((LENS_EV_CONSTANT) * ((float)current_exp_bin)) / (((float)integ_rows_rd)*ana_gain_rd*clear_r_digital_gain_rd);
+//printf("EV_CLEARr: %f\n", (float) (EV_CLEARr)  );
+
+
+
+
+
+
+
+
+
+
+// - - - - - - - - - - - - - - - - - AEGC update - - - - - - - - - - - - - - - //
+// Assign the EV_CLEARr value
+if      (EV_CLEARr <= 0.25f) {
+  update_number = 0;
+}
+else if (EV_CLEARr <= 0.50) {
+  update_number = 1;
+}
+else if (EV_CLEARr <= 0.70f) {
+  update_number = 2;
+}
+else if (EV_CLEARr <= 1.50f) {
+  update_number = 3;
+}
+else if (EV_CLEARr <= 3.00f) {
+  update_number = 4;
+}
+else if (EV_CLEARr <= 6.00f) {
+  update_number = 5;
+}
+else if (EV_CLEARr <= 9.00f) {
+  update_number = 6;
+}
+else if (EV_CLEARr <= 10.00f) {
+  update_number = 7;
+}
+else if (EV_CLEARr <= 11.00f) {
+  update_number = 8;
+}
+else if (EV_CLEARr <= 12.00f) {
+  update_number = 9;
+}
+else if (EV_CLEARr <= 13.00f) {
+  update_number = 10;
+}
+else if (EV_CLEARr <= 14.00f) {
+  update_number = 11;
+}
+else if (EV_CLEARr <= 15.00f) {
+  update_number = 12;
+}
+else if (EV_CLEARr <= 16.00f) {
+  update_number = 13;
+}
+else if (EV_CLEARr <= 17.00f) {
+  update_number = 14;
+}
+else  {
+  update_number = 15;
+}
+  
+printf("update_number: %f\n", (float) (update_number)  );
+
+
+
+
+
+// Array Pointers
+static unsigned char i_c1 = 0x00;
+static unsigned char i_r  = 0x00;
+static unsigned char i_b  = 0x00;
+static unsigned char i_c2 = 0x00;
+
+static double ae_mean_c1[16];
+static double ae_mean_b[16];
+static double ae_mean_r[16];
+static double ae_mean_c2[16];
+
+
+if (previous_frame_count != frame_count) { 
+  ae_mean_c1[i_c1 % 16] = (double)((LENS_EV_CONSTANT) * ((double)CLEARrChannelPixelMean)) / (((double)integ_rows_rd)*(double)ana_gain_rd*(double)clear_r_digital_gain_rd); // Push normalized mean of Clear_r
+  i_c1 = (i_c1 == ((unsigned char) 0xFF)) ? ((unsigned char) 0x00) : i_c1+((unsigned char)1);
+  
+  ae_mean_r[i_r % 16] = (double)((LENS_EV_CONSTANT) * ((double)REDChannelPixelMean)) / (((double)integ_rows_rd)*(double)ana_gain_rd*(double)red_digital_gain_rd); // Push normalized mean of Red
+  i_r = (i_r == ((unsigned char) 0xFF)) ? ((unsigned char) 0x00) : i_r+((unsigned char)1);
+  
+  ae_mean_b[i_b % 16] = (double)((LENS_EV_CONSTANT) * ((double)BLUEChannelPixelMean)) / (((double)integ_rows_rd)*(double)ana_gain_rd*(double)blue_digital_gain_rd); // Push normalized mean of Blue
+  i_b = (i_b == ((unsigned char) 0xFF)) ? ((unsigned char) 0x00) : i_b+((unsigned char)1);
+}
+
+
+moving_avg_clear_r = compute_moving_avg (ae_mean_c1);
+moving_avg_red     = compute_moving_avg (ae_mean_r);
+moving_avg_blue    = compute_moving_avg (ae_mean_b);
+
+double ratio_c1_div_r = ((double) moving_avg_clear_r) / ((double) moving_avg_red);
+double ratio_c1_div_b = ((double) moving_avg_clear_r) / ((double) moving_avg_blue);
+printf("ratio_c1_div_r: %f\n", (float) (ratio_c1_div_r)  );
+printf("ratio_c1_div_b: %f\n", (float) (ratio_c1_div_b)  );
+
+
+// Define when a cfg-reg update is needed
+unsigned char update_cfgregs = (previous_frame_count != frame_count);
+
+// Used to capture v6 iteration
+if (update_cfgregs) { 
+  // NB. Upon initialization:
+  // integ_rows_wr = 450
+  // analog_gain = x1
+
+  // For AEGC
+  // Max. integ time: 16.6ms
+  // Min. integ time: 3.4ms
+  // Max. analog gain: x4
+  // Min. analog gain: x1
+  // digital gain (CLEARr) = x1 (fixed)
+
+
+  cfgreg[0]=0x3012;        // integ_time_cfgreg_addr  
+  cfgreg[2]=0x30b0;        // ana_gain_cfgreg_addr    
+ 
+
+// For AR0135
+  if      (update_number == 0) { 
+    integ_rows_wr = (unsigned short) 750;// 16.4ms 
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 4.0;
+    cfgreg[3]=0x0020;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 1) {
+    integ_rows_wr = (unsigned short) 750;// 16.4ms   
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 4.0;
+    cfgreg[3]=0x0020;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 2) {
+    integ_rows_wr = (unsigned short) 750;  // 16.4ms   
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 4.0;
+    cfgreg[3]=0x0020;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 3) { 
+    integ_rows_wr = (unsigned short) 750;  // 16.4ms   
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 2.0;
+    cfgreg[3]=0x0010;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 4) {
+    integ_rows_wr = (unsigned short) 438;    
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 2.0;
+    cfgreg[3]=0x0010;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 5) {
+    integ_rows_wr = (unsigned short) 364;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 6) {
+    integ_rows_wr = (unsigned short) 336; //230
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 7) {
+    integ_rows_wr = (unsigned short) 320; 
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 8) {
+    integ_rows_wr = (unsigned short) 292;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 9) {
+    integ_rows_wr = (unsigned short) 233;//160;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 10) {
+    integ_rows_wr = (unsigned short) 128; 
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 11) {
+    integ_rows_wr = (unsigned short) 64;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 12) {
+    integ_rows_wr = (unsigned short) 32;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 13) {
+    integ_rows_wr = (unsigned short) 16;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 14) {
+    integ_rows_wr = (unsigned short) 8;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+  else  { // update_number == 15
+    integ_rows_wr = (unsigned short) 4;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
+  }
+
+
+
+
+} // if (update_cfgregs)
+
+
+
+
+
+
+// - - - - - - - - - - - - - - - - - AWB update - - - - - - - - - - - - - - - //
+double unbounded_red_gain;
+static double bounded_red_gain = (double)1.0;
+// Update Red Gain 
+if (update_cfgregs) {
+  cfgreg[6]=(unsigned short)0x305a;        // red dig_gain_cfgreg_addr 
+
+  unbounded_red_gain = ratio_c1_div_r;
+
+  // For AWB
+  // Min digital gain (RED) = x1/8
+  // Max digital gain (RED) = x4
+  // Digital gain (RED) stepsize = x1/8
+  if      (unbounded_red_gain <= (double)(0.125)) bounded_red_gain = (double)0.125;
+  else if (unbounded_red_gain >= (double)(4.0))   bounded_red_gain = (double)4.0;
+  else                                            bounded_red_gain = unbounded_red_gain;
+
+  cfgreg[7]=(unsigned short) (bounded_red_gain*((double)32.0));// Multiply by 32 for formating purposes
+}
+
+
+double unbounded_blue_gain;
+static double bounded_blue_gain = (double)1.0;
+// Update Blue Gain 
+if (update_cfgregs) {
+  cfgreg[8]=(unsigned short)0x3058;        // blue dig_gain_cfgreg_addr 
+
+  unbounded_blue_gain = ratio_c1_div_b;
+
+  // For AWB
+  // Min digital gain (BLUE) = x1/8
+  // Max digital gain (BLUE) = x4
+  // Digital gain (BLUE) stepsize = x1/8
+  if      (unbounded_blue_gain <= (double)(0.125)) bounded_blue_gain = (double)0.125;
+  else if (unbounded_blue_gain >= (double)(4.0))   bounded_blue_gain = (double)4.0;
+  else                                             bounded_blue_gain = unbounded_blue_gain;
+
+  cfgreg[9]=(unsigned short) (bounded_blue_gain*((double)32.0));// Multiply by 32 for formating purposes
+}
+
+
+
+
+
+
+// Create a two state machine to wait for 8 frames before commencing AEGC & AWB updates
+static int first_grabbed_frame_count = 0;
+static int second_grabbed_frame_count = 0;
+static int first_cycle_complete = 0;
+static int second_cycle_complete = 0;
+
+static int aegc_awb_started = 0;
+
+if (first_cycle_complete == 0) {
+  first_grabbed_frame_count = frame_count;
+  first_cycle_complete = 1;
+}
+
+second_grabbed_frame_count = frame_count;  
+
+if ((second_grabbed_frame_count < (65535-AEGC_AWB_START_DLY_IN_FRM_CNT)) && (second_cycle_complete == 0)) {
+  if ((second_grabbed_frame_count - first_grabbed_frame_count) > AEGC_AWB_START_DLY_IN_FRM_CNT) {
+    aegc_awb_started = 1;
+    second_cycle_complete = 1;
+  }
+}
+
+
+previous_frame_count   = frame_count;
+
+
+                // create a 4 bit rollover counter
+                if (cnt == 16) cnt = 0;
+		else         ++cnt;
+
+
+		switch(cnt) {
+			case 0  :
+			sensor_reg_write(dev->fd, 0x3010, 0x0000);// Enable all I2C writes to Image
+			break;
+			
+			case 1  :
+			sensor_reg_write(dev->fd, 0x301A, 0x10D4);// Make all Imager registers rd/wr 
+			break;
+			
+			case 2  :
+			sensor_reg_write(dev->fd, 0x3002, 0x0004); // Extend start-y from 0x0000 to 0x0004 since metadata and metastats are going to be added 
+			break;
+			
+			case 3  :
+			sensor_reg_write(dev->fd, 0x3064, 0x1982);// Turn-on metadata;
+			break;
+			
+			case 4  :
+			sensor_reg_write(dev->fd, 0x300A, 0x08ca);// Set appropriate frame_length_lines for 20fps
+			break;
+			
+			case 5  :
+			sensor_reg_write(dev->fd, 0x300C, 0x0672);// Set appropriate line_length_pixels ONSEMI OPTIMIZED: DO NOT CHANGE THIS
+			break;
+			
+			case 6  :
+			  sensor_reg_write(dev->fd, 0x301A, 0x90D4);// Set group hold  
+			break;
+			  
+			case 7  :
+			  sensor_reg_write(dev->fd, cfgreg[0], cfgreg[1]);// Update integ. time (0x3012)
+			break;
+			
+			case 8  :
+			  sensor_reg_write(dev->fd, cfgreg[2], cfgreg[3]);// Update integ. time (0x30B0)			
+			break;
+			
+			case 9  :
+			  sensor_reg_write(dev->fd, cfgreg[8], cfgreg[9]);// Update Blue digital gain (0x3058)	
+			break;
+			
+			case 10  :
+			  sensor_reg_write(dev->fd, cfgreg[6], cfgreg[7]);// Update Red digital gain (0x305a)				  
+			break;
+			
+			case 11  :
+			  sensor_reg_write(dev->fd, 0x301A, 0x10D4);// clear group hold  
+			break;
+			
+			case 12  :
+			break;
+			
+			case 13  :
+			break;
+			
+			case 14  :
+			break;
+			
+			case 15  :
+			break;	
+
+			default :
+				sensor_reg_write(dev->fd, 0x3004, 0x0000); // x-start
+		}
+
+
 
 		std_msgs::Header mymessage = std_msgs::Header();
 		mymessage.stamp = ros::Time::now();
@@ -1660,6 +2420,7 @@ cv::Mat decode_process_a_frame(
 #endif
 	
 	if (*soft_ae_flag)
+	  printf("----soft_ae_flag is ON\n");
 		apply_soft_ae(dev, p);
 	if (*save_raw)
 		v4l2_core_save_data_to_file(p, dev->imagesize);
