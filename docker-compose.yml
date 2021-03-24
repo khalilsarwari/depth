@@ -10,6 +10,9 @@ services:
     volumes: 
       - ".:/home/user"
       - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+      - "/mnt/data:/mnt/data"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     environment:
       - DISPLAY=$DISPLAY
       - QT_X11_NO_MITSHM=1
@@ -26,6 +29,8 @@ services:
     volumes: 
       - "./camera_ws:/home/user/camera_ws"
       - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     depends_on:
       - main
     environment:
@@ -40,7 +45,7 @@ services:
       /bin/bash -c "source /opt/ros/melodic/setup.bash && 
                     cd /home/user/camera_ws && 
                     catkin clean -y && catkin build && source ./devel/setup.bash &&
-                    ./devel/lib/leopard_tools/leopard_cam -s 1280x960"
+                    ./devel/lib/leopard_tools/leopard_cam -s 1280x960 -t 10"
 
   lidar:
     build:
@@ -51,6 +56,8 @@ services:
     volumes: 
       - "./lidar_ws:/home/user/lidar_ws"
       - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     depends_on:
       - main
       - camera
@@ -62,7 +69,7 @@ services:
     network_mode: host 
     command: >
       /bin/bash -c "source /opt/ros/melodic/setup.bash && 
-          cd /home/user/lidar_ws && 
+          cd /home/user/lidar_ws && catkin clean -y &&
           catkin build &&
           source ./devel/setup.bash &&
-          roslaunch livox_ros_driver livox_lidar.launch publish_freq:=20 xfer_format:=2 --wait"
+          roslaunch livox_ros_driver livox_lidar.launch publish_freq:=10 xfer_format:=2 --wait"

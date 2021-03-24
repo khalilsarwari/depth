@@ -2419,9 +2419,9 @@ cv::Mat decode_process_a_frame(
 	cv::cuda::GpuMat gpu_img;
 #endif
 	
-	if (*soft_ae_flag)
-	  printf("----soft_ae_flag is ON\n");
-		apply_soft_ae(dev, p);
+	// if (*soft_ae_flag)
+	//   printf("----soft_ae_flag is ON\n");
+	// 	apply_soft_ae(dev, p);
 	if (*save_raw)
 		v4l2_core_save_data_to_file(p, dev->imagesize);
 

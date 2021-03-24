@@ -306,7 +306,9 @@ uint32_t Lddc::PublishPointcloudData(LidarDataQueue *queue, uint32_t packet_num,
       }
     }
     if (!published_packet) {
-      cloud->header.stamp = timestamp / 1000.0;  // to pcl ros time stamp
+      ros::Time now = ros::Time::now();
+      cloud->header.stamp = now.toNSec() / 1000.0;
+      // cloud->header.stamp = timestamp / 1000.0;  // to pcl ros time stamp
     }
     uint32_t single_point_num = storage_packet.point_num * echo_num;
 

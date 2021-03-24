@@ -21,7 +21,7 @@ class CrossCalibrationNode(object):
 
         # cross calib params
         self.frame = 0
-        self.limit = 2
+        self.limit = 20
 
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
         # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
@@ -54,7 +54,33 @@ class CrossCalibrationNode(object):
 
         pcl_data = np.array(points_list) # XYZI
         # print("LIDAR", cloud.header.stamp, pcl_data.shape)
-        
+        camera_matrix = np.array([[646.2402992060081, 0.0, 621.3318167165827], 
+                                [0.0, 645.3381333548518, 497.8438155757953], 
+                                [0.0, 0.0, 1.0]]).T
+        pcl_points = pcl_data.copy()
+        pcl_points[:, 3] = 1 # X Y Z 1
+        pixel_size_x = 4 # real world units per pixel
+        pixel_size_y = 4
+        tr = np.array(([1, 0, 0],
+                        [0, 1, 0],
+                        [0, 0, 1], 
+                        [0, 0, 0]))
+        image_points = np.matmul(np.matmul(pcl_points, tr), camera_matrix)
+        image_xy = image_points[:, :2]
+        image_xy[:, 0] = image_xy[:, 0]// pixel_size_x
+        image_xy[:, 1] = image_xy[:, 1]// pixel_size_y
+        yxs = []
+        image_width = 1280
+        image_height = 960
+        for x,y in image_xy:
+            # print(x, y)
+            if (0 < x < image_width) and (0 < y < image_height):
+                yxs.append([y, x])
+        if len(yxs) > 0:
+            yxs = np.array(yxs, dtype=np.int32)
+            cv_image[yxs[:, 0], yxs[:, 1]] = [0, 0, 0]
+            self.cc_pub.publish(self.bridge.cv2_to_imgmsg(cv_image))
+
         self.frame += 1
         if self.frame == self.limit:
             self.image_sub.unregister()
@@ -67,31 +93,7 @@ class CrossCalibrationNode(object):
             # data = {'camera_matrix': np.asarray(mtx).tolist(),
             #         'dist_coeff': np.asarray(dist).tolist()}
             # print(data)
-            camera_matrix = np.array([[646.2402992060081, 0.0, 621.3318167165827], 
-                                    [0.0, 645.3381333548518, 497.8438155757953], 
-                                    [0.0, 0.0, 1.0]]).T
-            pcl_points = pcl_data.copy()
-            pcl_points[:, 3] = 1 # X Y Z 1
-            pixel_size_x = 4 # real world units per pixel
-            pixel_size_y = 4
-            tr = np.array(([1, 0, 0],
-                            [0, 1, 0],
-                            [0, 0, 1], 
-                            [0, 0, 0]))
-            image_points = np.matmul(np.matmul(pcl_points, tr), camera_matrix)
-            image_xy = image_points[:, :2]
-            image_xy[:, 0] = image_xy[:, 0]// pixel_size_x
-            image_xy[:, 1] = image_xy[:, 1]// pixel_size_y
-            yxs = []
-            image_width = 1280
-            image_height = 960
-            for x,y in image_xy:
-                # print(x, y)
-                if (0 < x < image_width) and (0 < y < image_height):
-                    yxs.append([y, x])
-            yxs = np.array(yxs, dtype=np.int32)
-            cv_image[yxs[:, 0], yxs[:, 1]] = [0, 0, 0]
-            self.cc_pub.publish(self.bridge.cv2_to_imgmsg(cv_image))
+
 
 if __name__ == '__main__':
     rospy.init_node("cross_calibration_node", anonymous=True)
