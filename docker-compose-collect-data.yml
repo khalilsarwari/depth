@@ -17,7 +17,9 @@ services:
       - DISPLAY=$DISPLAY
       - QT_X11_NO_MITSHM=1
     command: >
-      /bin/bash -c "/opt/ros/melodic/env.sh roscore & /opt/ros/melodic/env.sh rosrun rviz rviz -d default.rviz"
+      /bin/bash -c "/opt/ros/melodic/env.sh roscore & 
+                    /opt/ros/melodic/env.sh rosrun rviz rviz -d default.rviz &
+                    /opt/ros/melodic/env.sh python data_collection/collect_data.py -location $LOCATION"
     network_mode: host
 
   camera:
