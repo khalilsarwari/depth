@@ -48,7 +48,7 @@ class DataCollectionNode(object):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="data-collection tool")
     parser.add_argument("-location", type=str, required=True, help='name of city in which data is being collected')
-    parser.add_argument('-max_count', action="store", type=int, default=36000, help="max frames to collect")
+    parser.add_argument('-max_count', action="store", type=int, default=37000, help="max frames to collect")
 
     args = parser.parse_args()
     rospy.init_node("data_collection_node", anonymous=True)

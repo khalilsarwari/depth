@@ -834,7 +834,7 @@ void debayer_awb_a_frame(
 			cv::COLOR_BayerBG2BGR + bayer_flg);
 	
 #endif
-	apply_white_balance(opencvImage);
+	//apply_white_balance(opencvImage);
 		// if (awb_flg)
 		// {	
 		// 	//Timer timer;
