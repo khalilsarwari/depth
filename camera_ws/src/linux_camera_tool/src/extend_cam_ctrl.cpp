@@ -1320,7 +1320,6 @@ for (int hist_cnt=32-1; hist_cnt >= 0; hist_cnt=hist_cnt-1) {
     break;
   }
 }
-//printf("current_exp_bin: %d\n", (int) (current_exp_bin)  );
 
 
 
@@ -1331,9 +1330,10 @@ for (int hist_cnt=32-1; hist_cnt >= 0; hist_cnt=hist_cnt-1) {
  
 
 // Compute EV for CLEAR_r
-// EV_CLEARr varies between 1 (pitch-dark)  and 170 (saturated)
+// EV_CLEARr varies between 0.16 (pitch-dark)  and 775 (saturated) when integ. time is 700rows
+// EV_CLEARr varies between 50 (pitch-dark)  and 775 (saturated) when integ. time is 10rows
 EV_CLEARr = (float)((LENS_EV_CONSTANT) * ((float)current_exp_bin)) / (((float)integ_rows_rd)*ana_gain_rd*clear_r_digital_gain_rd);
-//printf("EV_CLEARr: %f\n", (float) (EV_CLEARr)  );
+
 
 
 
@@ -1346,57 +1346,61 @@ EV_CLEARr = (float)((LENS_EV_CONSTANT) * ((float)current_exp_bin)) / (((float)in
 
 // - - - - - - - - - - - - - - - - - AEGC update - - - - - - - - - - - - - - - //
 // Assign the EV_CLEARr value
-if      (EV_CLEARr <= 0.25f) {
+if      (EV_CLEARr <= 0.8f) {
   update_number = 0;
 }
-else if (EV_CLEARr <= 0.50) {
+else if (EV_CLEARr <= 1.750) {
   update_number = 1;
 }
-else if (EV_CLEARr <= 0.70f) {
+else if (EV_CLEARr <= 3.00f) {
   update_number = 2;
 }
-else if (EV_CLEARr <= 1.50f) {
+else if (EV_CLEARr <= 5.00f) {
   update_number = 3;
 }
-else if (EV_CLEARr <= 3.00f) {
+else if (EV_CLEARr <= 9.00f) {
   update_number = 4;
 }
-else if (EV_CLEARr <= 6.00f) {
+else if (EV_CLEARr <= 14.00f) {
   update_number = 5;
 }
-else if (EV_CLEARr <= 9.00f) {
+else if (EV_CLEARr <= 22.00f) {
   update_number = 6;
 }
-else if (EV_CLEARr <= 10.00f) {
+else if (EV_CLEARr <= 30.00f) {
   update_number = 7;
 }
-else if (EV_CLEARr <= 11.00f) {
+else if (EV_CLEARr <= 45.00f) {
   update_number = 8;
 }
-else if (EV_CLEARr <= 12.00f) {
+else if (EV_CLEARr <= 70.00f) {
   update_number = 9;
 }
-else if (EV_CLEARr <= 13.00f) {
+else if (EV_CLEARr <= 100.00f) {
   update_number = 10;
 }
-else if (EV_CLEARr <= 14.00f) {
+else if (EV_CLEARr <= 200.00f) {
   update_number = 11;
 }
-else if (EV_CLEARr <= 15.00f) {
+else if (EV_CLEARr <= 300.00f) {
   update_number = 12;
 }
-else if (EV_CLEARr <= 16.00f) {
+else if (EV_CLEARr <= 400.00f) {
   update_number = 13;
 }
-else if (EV_CLEARr <= 17.00f) {
+else if (EV_CLEARr <= 640.00f) {
   update_number = 14;
 }
 else  {
   update_number = 15;
 }
   
-//printf("update_number: %f\n", (float) (update_number)  );
-
+//printf("update_numbers: %f\n", (float) (update_number)  );
+//printf("current_exp_bin: %d\n", (int) (current_exp_bin)  );
+//printf("integ_rows_rd: %d\n", (int) (integ_rows_rd)  );
+//printf("ana_gain_rd: %f\n", (float) (ana_gain_rd)  );
+//printf("clear_r_digital_gain_rd: %f\n", (float) (clear_r_digital_gain_rd)  );
+//printf("EV_CLEARr: %f\n", (float) (EV_CLEARr)  );
 
 
 
@@ -1457,48 +1461,49 @@ if (update_cfgregs) {
  
 
 // For AR0135
-  if      (update_number == 0) { 
-    integ_rows_wr = (unsigned short) 750;// 16.4ms 
+
+  if      (update_number == 0) {
+    integ_rows_wr = (unsigned short) 750;  // 16.4ms   
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 4.0;
     cfgreg[3]=0x0020;        // ana_gain_cfgreg_data
   }
 
-  else if (update_number == 1) {
-    integ_rows_wr = (unsigned short) 750;// 16.4ms   
+  else if (update_number == 1) { 
+    integ_rows_wr = (unsigned short) 750;  // 16.4ms   
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
-    ana_gain_wr = 4.0;
-    cfgreg[3]=0x0020;        // ana_gain_cfgreg_data
+    ana_gain_wr = 2.0;
+    cfgreg[3]=0x0010;        // ana_gain_cfgreg_data
   }
 
   else if (update_number == 2) {
-    integ_rows_wr = (unsigned short) 750;  // 16.4ms   
-    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
-
-    ana_gain_wr = 4.0;
-    cfgreg[3]=0x0020;        // ana_gain_cfgreg_data
-  }
-
-  else if (update_number == 3) { 
-    integ_rows_wr = (unsigned short) 750;  // 16.4ms   
+    integ_rows_wr = (unsigned short) 364;// 438;    
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 2.0;
     cfgreg[3]=0x0010;        // ana_gain_cfgreg_data
+  }
+
+  else if (update_number == 3) {
+    integ_rows_wr = (unsigned short) 280;//364;
+    cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
+
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
   }
 
   else if (update_number == 4) {
-    integ_rows_wr = (unsigned short) 438;    
+    integ_rows_wr = (unsigned short) 190;//336; //230
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
-    ana_gain_wr = 2.0;
-    cfgreg[3]=0x0010;        // ana_gain_cfgreg_data
+    ana_gain_wr = 1.0;
+    cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
   }
 
   else if (update_number == 5) {
-    integ_rows_wr = (unsigned short) 364;
+    integ_rows_wr = (unsigned short) 110;//320; 
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1506,7 +1511,7 @@ if (update_cfgregs) {
   }
 
   else if (update_number == 6) {
-    integ_rows_wr = (unsigned short) 336; //230
+    integ_rows_wr = (unsigned short) 75;//292;
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1514,7 +1519,7 @@ if (update_cfgregs) {
   }
 
   else if (update_number == 7) {
-    integ_rows_wr = (unsigned short) 320; 
+    integ_rows_wr = (unsigned short) 45;//233;//160;
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1522,7 +1527,7 @@ if (update_cfgregs) {
   }
 
   else if (update_number == 8) {
-    integ_rows_wr = (unsigned short) 292;
+    integ_rows_wr = (unsigned short) 35;//128; 
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1530,7 +1535,7 @@ if (update_cfgregs) {
   }
 
   else if (update_number == 9) {
-    integ_rows_wr = (unsigned short) 233;//160;
+    integ_rows_wr = (unsigned short) 25;//64;
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1538,7 +1543,7 @@ if (update_cfgregs) {
   }
 
   else if (update_number == 10) {
-    integ_rows_wr = (unsigned short) 128; 
+    integ_rows_wr = (unsigned short) 20;//32;
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1546,7 +1551,7 @@ if (update_cfgregs) {
   }
 
   else if (update_number == 11) {
-    integ_rows_wr = (unsigned short) 64;
+    integ_rows_wr = (unsigned short) 16;//16;
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1554,15 +1559,15 @@ if (update_cfgregs) {
   }
 
   else if (update_number == 12) {
-    integ_rows_wr = (unsigned short) 32;
+    integ_rows_wr = (unsigned short) 12;//8;
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
     cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
   }
-
-  else if (update_number == 13) {
-    integ_rows_wr = (unsigned short) 16;
+  
+  else if (update_number == 13) { 
+    integ_rows_wr = (unsigned short) 10;// 
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1570,15 +1575,14 @@ if (update_cfgregs) {
   }
 
   else if (update_number == 14) {
-    integ_rows_wr = (unsigned short) 8;
+    integ_rows_wr = (unsigned short) 7;//  
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
     cfgreg[3]=0x0000;        // ana_gain_cfgreg_data
   }
-
   else  { // update_number == 15
-    integ_rows_wr = (unsigned short) 4;
+    integ_rows_wr = (unsigned short) 4;//4;
     cfgreg[1]=integ_rows_wr; // integ_time_cfgreg_data
 
     ana_gain_wr = 1.0;
@@ -1689,7 +1693,8 @@ previous_frame_count   = frame_count;
 			break;
 			
 			case 4  :
-			sensor_reg_write(dev->fd, 0x300A, 0x08ca);// Set appropriate frame_length_lines for 20fps
+			//sensor_reg_write(dev->fd, 0x300A, 0x08ca);// Set appropriate frame_length_lines for 20fps
+			sensor_reg_write(dev->fd, 0x300A, 0x1194);// Set appropriate frame_length_lines for 10fps			
 			break;
 			
 			case 5  :
@@ -1717,19 +1722,23 @@ previous_frame_count   = frame_count;
 			break;
 			
 			case 11  :
-			  sensor_reg_write(dev->fd, 0x301A, 0x10D4);// clear group hold  
+			  sensor_reg_write(dev->fd, 0x3030, 0x0063);// Set PLL multiplier to 99 for 74.25MHz
 			break;
 			
 			case 12  :
+			  sensor_reg_write(dev->fd, 0x302E, 0x0004);// Set PLL N to 4 for 74.25MHz			  
 			break;
 			
 			case 13  :
+			  sensor_reg_write(dev->fd, 0x302C, 0x0001);// Set PLL P1 to 1 for 74.25MHz // COULD BE SKIPPED SINCE THIS IS ALREADY SO			  
 			break;
 			
 			case 14  :
+			  sensor_reg_write(dev->fd, 0x302A, 0x0008);// Set PLL P2 to 8 for 74.25MHz // COULD BE SKIPPED SINCE THIS IS ALREADY SO			  
 			break;
 			
 			case 15  :
+			  sensor_reg_write(dev->fd, 0x301A, 0x10D4);// clear group hold  			  
 			break;	
 
 			default :
@@ -1743,6 +1752,7 @@ previous_frame_count   = frame_count;
 		if(!frame.empty()) {
 			msg = cv_bridge::CvImage(mymessage, "bgr8", frame).toImageMsg();
 			pub.publish(msg);
+			//std::cout << mymessage.stamp;// for debug
 		} else {
 			std::cout << "Empty!";
 		}
@@ -2415,10 +2425,8 @@ cv::Mat decode_process_a_frame(
 	int width = dev->width;
 	int shift = set_shift(*bpp);
 	cv::Mat share_img;
-#ifdef HAVE_OPENCV_CUDA_SUPPORT
-	cv::cuda::GpuMat gpu_img;
-#endif
-	
+
+	// Khalil
 	// if (*soft_ae_flag)
 	//   printf("----soft_ae_flag is ON\n");
 	// 	apply_soft_ae(dev, p);
@@ -2452,13 +2460,8 @@ cv::Mat decode_process_a_frame(
 
 		//swap_two_bytes(dev, p);
 		cv::Mat img(height, width, CV_8UC1, (void *)p);
-#ifdef HAVE_OPENCV_CUDA_SUPPORT
-		gpu_img.upload(img);
-		debayer_awb_a_frame(gpu_img, *bayer_flag, *awb_flag);
-		gpu_img.download(img);
-#else
+
 		debayer_awb_a_frame(img, *bayer_flag, *awb_flag);
-#endif
 
 		if (*rgb_matrix_flg)
 		{
@@ -2502,13 +2505,8 @@ cv::Mat decode_process_a_frame(
 		}
 	}
 
-#ifdef HAVE_OPENCV_CUDA_SUPPORT
-	gpu_img.upload(share_img);
-	group_gpu_image_proc(gpu_img);
-	gpu_img.download(share_img);
-#else
+
 	group_gpu_image_proc(share_img);
-#endif
 
 	if (*flip_flag)
 		cv::flip(share_img, share_img, 0);

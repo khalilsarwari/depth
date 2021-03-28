@@ -63,13 +63,8 @@ void apply_gamma_correction(
 		p[i] = cv::saturate_cast<uchar>(pow(i / 255.0, gamma_value) * 255.0);
 	}
 
-#ifdef HAVE_OPENCV_CUDA_SUPPORT
-	cv::Ptr<cv::cuda::LookUpTable> lutAlg =
-		cv::cuda::createLookUpTable(look_up_table);
-	lutAlg->transform(opencvImage, opencvImage);
-#else
+
 	LUT(opencvImage, look_up_table, opencvImage);
-#endif
 }
 
 /** 
@@ -91,51 +86,7 @@ void apply_white_balance(
 	/// if it is gray image, do nothing
 	if (opencvImage.type() == CV_8UC1)
 		return;
-#ifdef HAVE_OPENCV_CUDA_SUPPORT
-	
-	cv::cuda::GpuMat _opencvImage = opencvImage.getGpuMat();
-	std::vector<cv::cuda::GpuMat> bgr_planes;
-	cv::cuda::split(_opencvImage, bgr_planes);
-	// cv::cuda::GpuMat hist[3];
-	// cv::Mat histogram[3];
-	// for (int i=0; i< 3; i++)
-	// {
-	// 	cv::cuda::calcHist(bgr_planes[i], hist[i]);
-	// 	hist[i].download(histogram[i]);
-	// }
-	// float accumulator[3][256];
-	// double discard_ratio = 0.05;
-	// int vmin[3], vmax[3];
-	// int total = _opencvImage.cols * _opencvImage.rows;
-	// for (int i = 0; i < 3; i++) {
-	// 	for (int j=0; j < (256-1); j++)
-	// 	{
-	// 		accumulator[i][j+1] = accumulator[i][j] + histogram[i].at<float>(j);
-	// 	}
-	// 	vmin[i] = 0;
-	// 	vmax[i] = 255;
-	// 	while (accumulator[i][vmin[i]] < discard_ratio * total)
-	// 		vmin[i] += 1;
-	// 	while (accumulator[i][vmax[i]] > (1 - discard_ratio) * total)
-	// 		vmax[i] -= 1;
-	// 	if (vmax[i] < 255 - 1)
-	// 		vmax[i] += 1;-
-		
-	// }
-	// for(int i=0; i< 3; i++)
-	// {
-	// 	printf("vmin[%d]=%d\r\n", i, vmin[i]);
-	// 	//printf("vmax[%d]=%d\r\n", i, vmax[i]);
-	// }
 
-	cv::cuda::equalizeHist(bgr_planes[0], bgr_planes[0]);
-	cv::cuda::equalizeHist(bgr_planes[1], bgr_planes[1]);
-	cv::cuda::equalizeHist(bgr_planes[2], bgr_planes[2]);
-	
-	cv::cuda::merge(bgr_planes, opencvImage);
-	
-#else
-	
 	cv::Mat _opencvImage = opencvImage.getMat();
 	double discard_ratio = 0.05;
 	int vmin[3], vmax[3];
@@ -258,7 +209,7 @@ void apply_white_balance(
 		}
 	);
 
-#endif
+
 }
 
 /** 
@@ -284,7 +235,7 @@ void apply_auto_brightness_and_contrast(
 	float alpha, beta;
 	double min_gray = 0, max_gray = 0;
 
-#ifndef HAVE_OPENCV_CUDA_SUPPORT
+
 
 	/// to calculate grayscale histogram
 	cv::Mat gray;
@@ -344,63 +295,7 @@ void apply_auto_brightness_and_contrast(
 
 	cv::Mat _opencvImage = opencvImage.getMat();
 
-#else
-	
-	/// to calculate grayscale histogram
-	cv::cuda::GpuMat gray;
-	gray = opencvImage.getGpuMat();
-	if (opencvImage.type() != CV_8UC1)
-		cv::cuda::cvtColor(gray, gray, cv::COLOR_BGR2GRAY);
-	
-	cv::Point minLoc, maxLoc;
-	if (clipHistPercent == 0)
-	{
-		/// keep full available range
-		cv::cuda::minMaxLoc(
-			gray,		// src 
-			&min_gray, 	// minVal
-			&max_gray,  // maxVal
-			NULL,		// Point* minLoc
-			NULL);		// Point* maxLoc
-	}
-	else
-	{
-		/// the grayscale histogram
-		cv::cuda::GpuMat hist;
-		/**
-		 * calculate histogram for 8-bit gray image
-		 * hist is a one row, 256 column, CV_32SC1 type
-		 */ 
-		cv::cuda::calcHist(
-			gray, 			// src
-			hist);			// output histogram
 
-		/// calculate cumulative distribution from the histogram
-		cv::Mat histogram;
-		hist.download(histogram);
-		
-		std::vector<float> accumulator(hist_size);
-		accumulator[0] = histogram.at<float>(0);
-		for (int i = 1; i < hist_size; i++)
-			accumulator[i] = accumulator[i - 1] + histogram.at<float>(i);
-		
-		/// locate points that cuts at required value
-		float max = accumulator.back();
-		clipHistPercent *= (max / 100.0); /// make percent as absolute
-		clipHistPercent /= 2.0;			  /// left and right wings
-		/// locate left cut
-		min_gray = 0;
-		while (accumulator[min_gray] < clipHistPercent)
-			min_gray++;
-
-		/// locate right cut
-		max_gray = hist_size - 1;
-		while (accumulator[max_gray] >= (max - clipHistPercent))
-			max_gray--;
-	}
-
-	cv::cuda::GpuMat _opencvImage = opencvImage.getGpuMat();
-#endif
 	/// current range
 	float input_range = max_gray - min_gray;
 	/// alpha expands current range to histsize range
@@ -436,38 +331,7 @@ void apply_auto_brightness_and_contrast(
 void apply_clahe(
 	cv::InputOutputArray& opencvImage)
 {
-#ifdef HAVE_OPENCV_CUDA_SUPPORT
-	
-	if (opencvImage.type() != CV_8UC1)
-	{
-		cv::cuda::GpuMat lab_image;
-		cv::cuda::cvtColor(opencvImage, lab_image, cv::COLOR_BGR2Lab);
-		/// Extract the L channel
-		std::vector<cv::cuda::GpuMat> lab_planes(3);
-		/// now we have the L image in lab_planes[0]
-		cv::cuda::split(lab_image, lab_planes); 
 
-		/// apply the CLAHE algorithm to the L channel
-		cv::Ptr<cv::cuda::CLAHE> clahe = cv::cuda::createCLAHE();
-		clahe->setClipLimit(4);
-		cv::cuda::GpuMat dst;
-		clahe->apply(lab_planes[0], dst);
-
-		/// Merge the the color planes back into an Lab image
-		dst.copyTo(lab_planes[0]);
-		cv::cuda::merge(lab_planes, lab_image);
-
-		/// convert back to RGB
-		cv::cuda::cvtColor(lab_image, opencvImage, cv::COLOR_Lab2BGR);
-	}
-	else
-	{
-		cv::Ptr<cv::cuda::CLAHE> clahe = cv::cuda::createCLAHE();
-		clahe->setClipLimit(4);
-		clahe->apply(opencvImage, opencvImage);		
-	}
-	
-#else
 	if (opencvImage.type() != CV_8UC1)
 	{
 		cv::Mat lab_image;
@@ -497,7 +361,6 @@ void apply_clahe(
 		clahe->apply(opencvImage, opencvImage);
 	}
 	
-#endif
 }
 
 /**
@@ -519,7 +382,7 @@ void sharpness_control(
 	cv::InputOutputArray& opencvImage,
 	int sharpness_val)
 {
-#ifndef HAVE_OPENCV_CUDA_SUPPORT
+
 	cv::Mat _opencvImage = opencvImage.getMat();
 	cv::Mat blurred;
 	cv::GaussianBlur(
@@ -537,26 +400,7 @@ void sharpness_control(
 		0, 				// gamma
 		opencvImage);	// dst
 
-#else
-	if (sharpness_val > 16) sharpness_val = 16;
-	int ksize = 2*(sharpness_val)-1;
-	cv::cuda::GpuMat _opencvImage = opencvImage.getGpuMat();
-	cv::cuda::GpuMat blurred;
-	cv::Ptr<cv::cuda::Filter> filter = 
-		cv::cuda::createGaussianFilter(
-			_opencvImage.type(),		// srcType
-			blurred.type(), 		// dstType
-			cv::Size(ksize, ksize),	// ksize
-			sharpness_val);			// sigma, Gaussian kernel std in X
-	filter->apply(_opencvImage, blurred);
-	cv::cuda::addWeighted(
-		_opencvImage, 	// src1
-		1.5, 			// alpha
-		blurred, 		// src2
-		-0.5, 			// beta
-		0, 				// gamma
-		opencvImage);	// dst
-#endif
+
 }
 
 /**
@@ -579,7 +423,7 @@ void canny_filter_control(
 {
 	const int ratio = 3;
 	const int kernel_size = 3;
-#ifndef HAVE_OPENCV_CUDA_SUPPORT
+	
 	cv::Mat _opencvImage = opencvImage.getMat();
 	cv::Mat edges;
 	cv::cvtColor(_opencvImage, edges, cv::COLOR_BGR2GRAY);
@@ -596,30 +440,7 @@ void canny_filter_control(
 		(edge_low_threshold)*ratio, // threshold 2
 		kernel_size);			    // aperture size
 
-#else
-	cv::cuda::GpuMat _opencvImage = opencvImage.getGpuMat();
-	cv::cuda::GpuMat edges;
-	cv::cuda::cvtColor(_opencvImage, edges, cv::COLOR_BGR2GRAY);
-	/// blur an image use normalized box filter
-	cv::Ptr<cv::cuda::Filter> blur = 
-	cv::cuda::createBoxFilter(
-		edges.type(),				// srcType
-		edges.type(),				// dstType
-		cv::Size(5,5));				// ksize
-	blur->apply(
-		edges,						// src 
-		edges);						// dst
 
-	cv::Ptr<cv::cuda::CannyEdgeDetector> canny = 
-	cv::cuda::createCannyEdgeDetector(
-		(edge_low_threshold), 	   // threshold 1
-		(edge_low_threshold)*ratio,// threshold 2
-		kernel_size); 			   // aperture size	
-	canny->detect(
-		edges,					   // src
-	 	opencvImage);			   // dst
-
-#endif
 }
 
 /**
@@ -798,11 +619,9 @@ void apply_brightness_and_contrast(
 	int alpha_val,
 	int beta_val)
 {
-#ifndef HAVE_OPENCV_CUDA_SUPPORT
+
 	cv::Mat _opencvImage = opencvImage.getMat();
-#else
-	cv::cuda::GpuMat _opencvImage = opencvImage.getGpuMat();
-#endif 
+
 	_opencvImage.convertTo(
 	opencvImage,	// dst 
 	-1, 			// rtype, if negative, same as input matrix type
@@ -824,16 +643,12 @@ void debayer_awb_a_frame(
 	/** color output */
 	if (bayer_flg != CV_MONO_FLG)
 	{
-#ifdef HAVE_OPENCV_CUDA_SUPPORT
-		// cv::cuda::cvtColor(opencvImage, opencvImage,
-		// cv::COLOR_BayerBG2BGR + bayer_flg);
-		cv::cuda::demosaicing(opencvImage, opencvImage,
-			cv::cuda::COLOR_BayerBG2BGR_MHT + bayer_flg);
-#else
+
 		cv::cvtColor(opencvImage, opencvImage,
 			cv::COLOR_BayerBG2BGR + bayer_flg);
 	
-#endif
+
+    // Khalil
 	//apply_white_balance(opencvImage);
 		// if (awb_flg)
 		// {	
@@ -844,13 +659,9 @@ void debayer_awb_a_frame(
 	/** mono output */
 	if (bayer_flg == CV_MONO_FLG && opencvImage.type() == CV_8UC3)
 	{
-#ifdef HAVE_OPENCV_CUDA_SUPPORT
-			cv::cuda::cvtColor(opencvImage, opencvImage, cv::COLOR_BayerBG2BGR);
-			cv::cuda::cvtColor(opencvImage, opencvImage, cv::COLOR_BGR2GRAY);
-#else
+
 			cv::cvtColor(opencvImage, opencvImage, cv::COLOR_BayerBG2BGR);
 			cv::cvtColor(opencvImage, opencvImage, cv::COLOR_BGR2GRAY);	
-#endif
 	}
 
 }

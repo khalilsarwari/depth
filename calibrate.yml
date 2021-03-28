@@ -17,7 +17,15 @@ services:
       - DISPLAY=$DISPLAY
       - QT_X11_NO_MITSHM=1
     command: >
-      /bin/bash -c "/opt/ros/melodic/env.sh roscore & /opt/ros/melodic/env.sh rosrun rviz rviz -d default.rviz"
+      /bin/bash -c "/opt/ros/melodic/env.sh roscore & 
+                    /opt/ros/melodic/env.sh rosrun rviz rviz -d default.rviz &
+                    cd ACSC/ros/livox_calibration_ws &&
+                    /opt/ros/melodic/env.sh catkin_make &&
+                    roslaunch calibration_data_collection lidar_camera_calibration.launch \
+                    config-path:=/home/user/ACSC/configs/data_collection.yaml \
+                    image-topic:=/camera/image \
+                    lidar-topic:=/livox/lidar \
+                    saving-path:=/tmp/data"
     network_mode: host
 
   camera:
