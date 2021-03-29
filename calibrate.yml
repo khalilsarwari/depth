@@ -1,5 +1,5 @@
 version: '2'
-
+# run this file using  docker-compose --file calibrate.yml  up -d && docker attach depth_main_1 since we need stdin
 services:
   main:
     build:
