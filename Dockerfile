@@ -55,7 +55,7 @@ RUN mkdir -p /home/user
 WORKDIR /home/user
 COPY . /home/user
 RUN cd ACSC/segmentation && python setup.py install 
-RUN mkdir /tmp/data
+RUN mkdir /home/user/calibration_data
 RUN chown -R user /home/user
 # Set user
 USER user
