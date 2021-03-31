@@ -168,6 +168,6 @@ old_logs/
 ._*
 **DS_Store**
 .vscode/
-data/
+**/*data/
 pretrained/
 txts/

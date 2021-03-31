@@ -1,0 +1,77 @@
+version: '2'
+
+services:
+  main:
+    build:
+      context: .
+    user: user
+    privileged: true
+    image: nvidia_ros_image
+    volumes: 
+      - ".:/home/user"
+      - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+      - "/mnt/data:/mnt/data"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - DISPLAY=$DISPLAY
+      - QT_X11_NO_MITSHM=1
+    command: >
+      /bin/bash -c "/opt/ros/melodic/env.sh roscore & 
+                    /opt/ros/melodic/env.sh rosrun rviz rviz -d default.rviz &
+                    /opt/ros/melodic/env.sh python data_collection/collect_data.py -location $LOCATION"
+    network_mode: host
+
+  camera:
+    build:
+      context: .
+    user: user
+    privileged: true
+    image: nvidia_ros_image
+    volumes: 
+      - "./camera_ws:/home/user/camera_ws"
+      - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    depends_on:
+      - main
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=$DISPLAY
+      - QT_X11_NO_MITSHM=1
+    network_mode: host
+    devices:
+      - "/dev/video0:/dev/video0"
+    command: >
+      /bin/bash -c "source /opt/ros/melodic/setup.bash && 
+                    cd /home/user/camera_ws && 
+                    catkin clean -y && catkin build && source ./devel/setup.bash &&
+                    ./devel/lib/leopard_tools/leopard_cam -s 1280x960 -t 10"
+
+  lidar:
+    build:
+      context: .
+    image: nvidia_ros_image
+    user: user
+    privileged: true
+    volumes: 
+      - "./lidar_ws:/home/user/lidar_ws"
+      - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    depends_on:
+      - main
+      - camera
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=$DISPLAY
+      - QT_X11_NO_MITSHM=1
+    network_mode: host 
+    command: >
+      /bin/bash -c "source /opt/ros/melodic/setup.bash && 
+          cd /home/user/lidar_ws &&
+          catkin build &&
+          source ./devel/setup.bash &&
+          roslaunch livox_ros_driver livox_lidar.launch publish_freq:=10 xfer_format:=2 --wait"

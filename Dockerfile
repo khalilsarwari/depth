@@ -30,7 +30,7 @@ apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN apt-get update && apt-get install -y --allow-downgrades --allow-remove-essential --allow-change-held-packages \
-libpcap-dev \
+libpcap-dev libpcl-dev \
 gstreamer1.0-tools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev \
 ros-melodic-desktop-full python-rosinstall python-rosinstall-generator python-wstool build-essential python-rosdep \
 ros-melodic-socketcan-bridge ros-melodic-ros-numpy python-pip python3-pip \
@@ -53,12 +53,13 @@ RUN adduser --disabled-password --gecos '' --uid 1000 --gid 1000 user
 RUN usermod -a -G video user
 RUN mkdir -p /home/user
 WORKDIR /home/user
-COPY . /home/user
-RUN cd ACSC/segmentation && python setup.py install 
-RUN mkdir /home/user/calibration_data
 RUN chown -R user /home/user
-# Set user
-USER user
+COPY . /home/user
+RUN cd ACSC/segmentation && python3 setup.py install 
+RUN pip3 install --upgrade pip && python3 -m pip install checkerboard
+RUN pip3 install --upgrade pip && python3 -m pip install PyYAML scipy sklearn transforms3d matplotlib cython
+RUN cd python-pcl && python3 setup.py build_ext -i && python3 setup.py install
+RUN mkdir /home/user/calibration_data
 
 
 

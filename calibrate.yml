@@ -4,7 +4,7 @@ services:
   main:
     build:
       context: .
-    user: user
+    user: root
     privileged: true
     image: nvidia_ros_image
     stdin_open: true
@@ -20,7 +20,6 @@ services:
       - QT_X11_NO_MITSHM=1
     command: >
       /bin/bash -c "cd ACSC &&
-                    pip3 install --upgrade pip &&
-                    python3 -m pip install checkerboard pyyaml scipy &&
-                    python3 camera_calibration.py
+                    python3 camera_calibration.py &&
+                    python3 calibration.py --config ./configs/sample.yaml
                     "
