@@ -76,6 +76,16 @@ python run_train.py -c original_params
 
 By default, training scripts will use all available GPUs. To run on a subset, please set the env var i.e. `CUDA_VISIBLE_DEVICES=0`.
 
+# Notes
+
+If you run into issues like `qt.qpa.screen: QXcbConnection: Could not connect to display :0`
+
+run 
+
+`xhost +`
+
+from outside the container
+
 # Acknowledgements
 
 This code contains selections from the official [Adabins](https://github.com/shariqfarooq123/AdaBins) repo.

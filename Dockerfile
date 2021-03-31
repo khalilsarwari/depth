@@ -59,7 +59,6 @@ RUN cd ACSC/segmentation && python3 setup.py install
 RUN pip3 install --upgrade pip && python3 -m pip install checkerboard
 RUN pip3 install --upgrade pip && python3 -m pip install PyYAML scipy sklearn transforms3d matplotlib cython
 RUN cd python-pcl && python3 setup.py build_ext -i && python3 setup.py install
-RUN mkdir /home/user/calibration_data
 
 
 

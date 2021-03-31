@@ -21,5 +21,6 @@ services:
     command: >
       /bin/bash -c "cd ACSC &&
                     python3 camera_calibration.py &&
-                    python3 calibration.py --config ./configs/sample.yaml
+                    python3 calibration.py --config ./configs/sample.yaml &&
+                    python3 projection_validation.py --config ./configs/sample.yaml
                     "

@@ -145,10 +145,13 @@ if __name__ == '__main__':
     parser.add_argument('--config', required=True, type=str, help="config file path")
     args = parser.parse_args()
 
-    configs = yaml.load(open(args.config, 'r').read(), Loader=yaml.FullLoader)
+    configs = yaml.load(open(args.config, 'r', encoding='utf8').read(), Loader=yaml.FullLoader)
 
     # load data
-    root = configs['data']['root']
+    data_fldr = os.listdir('/home/user/ACSC/calibration_data')
+    assert len(data_fldr) == 1, "There should be exactly one folder of image/clouds from collect-calibrate, found {}".format(data_fldr)
+    root = os.path.join('/home/user/ACSC/calibration_data', data_fldr[0])
+    print('Root dir:', root)
 
     # load validation data pair
     pointcloud_image_pair_list = utils.load_data_pair(root, load_rois=False)
