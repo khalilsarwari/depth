@@ -1,5 +1,5 @@
 # whether use automatic chessboard localization
-AUTOMATIC_CHESSBOARD_LOCALIZATION: True
+AUTOMATIC_CHESSBOARD_LOCALIZATION: False
 
 # scene size when labeling chessboards
 # xmin,xmax,ymin,ymax,zmin,zmax

@@ -819,6 +819,7 @@ def calibration(keep_list=None, preprocess_hook=None):
     pc_list = []
     img_list = []
     for idx, (pc_file, img_file, ROI_file) in pointcloud_image_pair_list:
+        print(img_file)
         # label ROI
         full_pc = np.load(pc_file)
         full_img = cv2.imread(img_file)
