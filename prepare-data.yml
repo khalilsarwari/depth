@@ -1,0 +1,24 @@
+version: '2'
+# run this file using  docker-compose --file calibrate.yml  up -d && docker attach depth_main_1 since we need stdin
+services:
+  main:
+    build:
+      context: .
+    user: root
+    privileged: true
+    image: nvidia_ros_image
+    stdin_open: true
+    tty: true
+    volumes: 
+      - ".:/home/user"
+      - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+      - "/media/khalil/5171ec63-00b1-4470-b2ec-a2e4f473468a/data:/data"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - DISPLAY=$DISPLAY
+      - QT_X11_NO_MITSHM=1
+    command: >
+      /bin/bash -c "cd ACSC &&
+                    python3 prepare_data.py
+                    "
