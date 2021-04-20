@@ -14,9 +14,8 @@ class BaseModel:
     def init_model(self):
         self.model = self.c.model(**self.c.model_params).cuda()
 
-        if True:
-            pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-            print('Total trainable params:', pytorch_total_params)
+        # pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        # print('Total trainable params:', pytorch_total_params)
             
         if torch.cuda.device_count() > 1:
             self.model = nn.SyncBatchNorm.convert_sync_batchnorm(self.model)

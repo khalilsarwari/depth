@@ -108,7 +108,8 @@ class OriginalTrainer(BaseTrainer):
         with torch.no_grad():
             val_si = helpers.RunningAverage()
             metrics = helpers.RunningAverageDict()
-            for batch in test_loader:
+
+            for ind, batch in enumerate(test_loader):
                 img = batch['x'].cuda()
                 depth = batch['y'].cuda()
                 assert depth.shape[0] == 1, 'use batch size 1 for testing'
@@ -128,18 +129,18 @@ class OriginalTrainer(BaseTrainer):
                 pred[torch.isnan(pred)] = self.c.min_depth_eval
 
                 gt_depth = depth.squeeze()
-                valid_mask = torch.logical_and(gt_depth > 1e-3, gt_depth < 80)
+                valid_mask = torch.logical_and(gt_depth > self.c.min_depth_eval, gt_depth < self.c.max_depth_eval)
 
                 # garg_crop:
-                gt_height, gt_width = gt_depth.shape
-                eval_mask = torch.zeros(valid_mask.shape).cuda()
-                eval_mask[int(0.40810811 * gt_height):int(0.99189189 * gt_height),
-                int(0.03594771 * gt_width):int(0.96405229 * gt_width)] = 1
+                # gt_height, gt_width = gt_depth.shape
+                # eval_mask = torch.zeros(valid_mask.shape).cuda()
+                # eval_mask[int(0.40810811 * gt_height):int(0.99189189 * gt_height),
+                # int(0.03594771 * gt_width):int(0.96405229 * gt_width)] = 1
 
-                valid_mask = torch.logical_and(valid_mask, eval_mask)
+                # valid_mask = torch.logical_and(valid_mask, eval_mask)
                 metrics.update(helpers.compute_errors(gt_depth[valid_mask], pred[valid_mask]))
                 if self.rank == 0:
-                    self.pbar.set_description("Epoch {}/{} | Loss {}".format(self.epoch, self.c.epochs, val_si.get_value().item()))
+                    self.pbar.set_description("Epoch {}/{} Test {}/{} | Loss {}".format(self.epoch, self.c.epochs, ind, len(test_loader),val_si.get_value().item()))
             test_losses = metrics.get_value()
             test_losses['val_si'] = val_si.get_value()
 

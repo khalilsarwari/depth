@@ -9,7 +9,6 @@ import glob
 import albumentations as A
 from dotmap import DotMap
 
-
 class KITTI(Dataset):
     def __init__(self, dataset_params):
         self.dp = dataset_params
@@ -45,6 +44,7 @@ class KITTI(Dataset):
         ])
 
         self.np_to_tensor = torch.tensor
+        # print(len(self.samples))
 
     def normalize(self, image):
         return self.normalize_fn(image=image)['image']
@@ -56,6 +56,7 @@ class KITTI(Dataset):
         img_file, depth_file = self.samples[idx]
         image = Image.open(img_file)
         depth_gt = Image.open(depth_file)
+        # print('depth_file', depth_file, type(depth_gt))
 
         # kb crop
         height = image.height
@@ -68,6 +69,7 @@ class KITTI(Dataset):
         x = np.array(image, dtype=np.float32)
 
         y = np.array(depth_gt, dtype=np.float32) / 256.0
+        # print(len(np.unique(y)), print(y.shape))
 
         result = {}
 
