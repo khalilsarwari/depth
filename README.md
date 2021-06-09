@@ -29,38 +29,60 @@ data/
           proj_depth/
             groundtruth/
             ...
-    waymo/
-      waymo_open_dataset_v_1_2_0/
-        training/
-          segment-10017090168044687777_6380_000_6400_000_with_camera_labels.tfrecord
-        validation/
+    todd/
+      data/
+        berkeley/
+          000036998_1618097868559354454.png
+          000036999_1618097868659674521_depth.png
+          000036999_1618097868659674521.npy
           ...
-    nyu/
-        train.txt
-        val.txt
-        train/
-            bathroom/
-                rgb_00043.jpg
-                sync_depth_00043.png
-                ...
-        test/
-            bathroom/
-                rgb_00045.jpg
-                sync_depth_00045.png
-                ...
+        campbell/
+          ...
+```
+# Camera Calibration
+Load images matching the paths `ACSC/calibration_data/**/**/*.png` and run
+
+```
+python depth/ACSC/camera_calibration.py
+```
+This will produce camera intrinsic and distortion parameters, with examples given under `ACSC/calibration_data/1617226905.61/`
+
+# Camera-LiDAR Cross Calibration
+This step requires user-involvement to select the ROI (calibration board) using the BEV.
+See [ACSC](https://github.com/HViktorTsoi/ACSC) for more details.
+
+```
+docker-compose --file collect-calibrate.yml  up -d && docker attach depth_main_1
 ```
 
-# Pretrained Models
-Pretrained models can be downloaded [here](https://drive.google.com/drive/folders/1bJ0TH2E_Cl5HKxTum9ajKWPomBIVvd0y?usp=sharing)
+Then run
+
+```
+docker-compose --file calibrate.yml up
+```
+This will produce the extrinsic parameters for the camera-LiDAR transformation, with an example given at `ACSC/calibration_data/1617226905.61/parameter/extrinsic`
 
 # Collecting Data
+To collect image and pointclouds for a given location, run:
+
+```
+LOCATION=<location> docker-compose -f collect-data.yml up
+```
 
 Sometimes the camera does not initialize correctly, in which case you need to run the following command to reset the usb device:
 ```
 cc usbreset.c -o usbreset && chmod a+x usbreset && sudo ./usbreset /dev/bus/usb/002/003
 ```
-
 Use `lsusb` to find the appropriate bus/device number
+
+To run the projection of the pointcloud into the image and postprocess, run:
+
+```
+docker-compose -f prepare-data.yml up
+```
+
+# Pretrained Models
+Pretrained models can be downloaded [here](https://drive.google.com/drive/folders/1bJ0TH2E_Cl5HKxTum9ajKWPomBIVvd0y?usp=sharing)
 
 # Running Experiments
 
@@ -89,3 +111,4 @@ from outside the container
 # Acknowledgements
 
 This code contains selections from the official [Adabins](https://github.com/shariqfarooq123/AdaBins) repo.
+[ACSC](https://github.com/HViktorTsoi/ACSC) is used for camera-LiDAR cross-calibration
