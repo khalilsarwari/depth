@@ -39,6 +39,15 @@ data/
         campbell/
           ...
 ```
+# Camera/LiDAR Setup
+
+To check that the camera and LiDAR are setup up correctly, and visualize the image/pointclouds, run:
+```
+docker-compose --file vis.yml up
+```
+
+This will open an rviz window and display the camera and LiDAR messages being received.
+
 # Camera Calibration
 Load images matching the paths `ACSC/calibration_data/**/**/*.png` and run
 
@@ -52,7 +61,7 @@ This step requires user-involvement to select the ROI (calibration board) using 
 See [ACSC](https://github.com/HViktorTsoi/ACSC) for more details.
 
 ```
-docker-compose --file collect-calibrate.yml  up -d && docker attach depth_main_1
+docker-compose --file collect-calibrate.yml up -d && docker attach depth_main_1
 ```
 
 Then run
