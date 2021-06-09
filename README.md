@@ -11,7 +11,7 @@ python -m pip install requirements.txt
 2. Download the necessary data:
 - [KITTI images](http://www.cvlibs.net/download.php?file=raw_data_downloader.zip)
 - [KITTI annotated depth](http://www.cvlibs.net/download.php?file=data_depth_annotated.zip) (Note: `train` and `val` folders should be combined after unzipping to make `depth`)
-- [Waymo Dataset](https://waymo.com/open/download/)
+- [TODD dataset](https://drive.google.com/drive/folders/11TMkt_pd2vhKRXAJx71cewwaFsw9Z_-c?usp=sharing) (ours)
 
 The final data folder structure should look something like:
 ```
