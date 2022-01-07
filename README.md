@@ -1,4 +1,6 @@
-# Depth
+# Progress and Proposals: A Case Study of Monocular Depth Estimation
+
+Report: https://www2.eecs.berkeley.edu/Pubs/TechRpts/2021/EECS-2021-32.pdf
 
 # Getting Started
 This code was developed using Ubuntu 18.04, PyTorch 1.7.0., and CUDA 11.0.
